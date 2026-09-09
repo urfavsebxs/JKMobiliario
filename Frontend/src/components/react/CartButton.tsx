@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { cartItems, getCartCount, getCartTotal, removeFromCart, updateQuantity } from "../../lib/cart";
+import { proxyImageUrl } from "../../lib/images";
 
 export default function CartButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -93,7 +94,7 @@ export default function CartButton() {
                         <div className="w-20 h-20 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                           {item.product.images[0] ? (
                             <img
-                              src={item.product.images[0]}
+                              src={proxyImageUrl(item.product.images[0])}
                               alt={item.product.name}
                               className="w-full h-full object-cover"
                             />

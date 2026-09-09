@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { proxyImageUrl } from "../../lib/images";
 
 interface Props {
   productId?: string;
@@ -421,7 +422,7 @@ export default function ProductForm({ productId, product }: Props) {
             <div className="flex flex-wrap gap-3">
               {existingImages.map((img) => (
                 <div key={img} className="relative">
-                  <img src={img} alt="" className="w-24 h-24 object-cover rounded border" />
+                  <img src={proxyImageUrl(img)} alt="" className="w-24 h-24 object-cover rounded border" />
                   <button
                     type="button"
                     onClick={() => removeExistingImage(img)}

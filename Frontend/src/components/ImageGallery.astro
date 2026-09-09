@@ -1,17 +1,22 @@
 ---
+import { proxyImageUrl } from "../lib/images";
+
 interface Props {
   images: string[];
   name: string;
 }
 
 const { images, name } = Astro.props;
+
+// Pre-procesar todas las URLs con proxy
+const proxiedImages = images.map((img) => proxyImageUrl(img));
 ---
 
 <div class="space-y-4">
   <div class="aspect-square rounded-lg overflow-hidden bg-gray-100" id="main-image-container">
-    {images[0] ? (
+    {proxiedImages[0] ? (
       <img
-        src={images[0]}
+        src={proxiedImages[0]}
         alt={name}
         class="w-full h-full object-cover"
         id="main-image"
@@ -25,9 +30,9 @@ const { images, name } = Astro.props;
     )}
   </div>
 
-  {images.length > 1 && (
+  {proxiedImages.length > 1 && (
     <div class="grid grid-cols-4 gap-2">
-      {images.map((image, index) => (
+      {proxiedImages.map((image, index) => (
         <button
           class="aspect-square rounded-md overflow-hidden bg-gray-100 border-2 border-transparent hover:border-gray-300 transition-colors thumbnail-btn"
           data-image={image}
