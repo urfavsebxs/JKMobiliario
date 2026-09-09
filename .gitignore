@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+*.log
+Backend/fix-*.js
+Backend/package-lock.json
+AGENTS.md
+Frontend/AGENTS.md
+Frontend/README.md

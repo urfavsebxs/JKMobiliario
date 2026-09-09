@@ -1,0 +1,28 @@
+---
+interface Props {
+  stock: number;
+  variantStock?: number;
+}
+
+const { stock, variantStock } = Astro.props;
+
+const displayStock = variantStock !== undefined ? variantStock : stock;
+---
+
+<div class="flex items-center gap-2">
+  {displayStock > 0 ? (
+    <>
+      <span class={`w-2.5 h-2.5 rounded-full ${displayStock > 5 ? "bg-green-500" : displayStock > 0 ? "bg-yellow-500" : "bg-red-500"}`}></span>
+      <span class="text-sm text-gray-700">
+        {displayStock > 5
+          ? "En stock"
+          : `Solo quedan ${displayStock} unidades`}
+      </span>
+    </>
+  ) : (
+    <>
+      <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+      <span class="text-sm text-red-600 font-medium">Agotado</span>
+    </>
+  )}
+</div>

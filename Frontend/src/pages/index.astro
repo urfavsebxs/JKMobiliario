@@ -1,0 +1,33 @@
+---
+import Layout from "../layouts/Layout.astro";
+import ProductGrid from "../components/ProductGrid.astro";
+import { getProducts } from "../lib/api";
+
+let products = [];
+let error = null;
+
+try {
+  const response = await getProducts(1, 12);
+  products = response.products;
+} catch (e) {
+  error = e instanceof Error ? e.message : "Error al cargar productos";
+}
+---
+
+<Layout title="Productos">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Nuestros Productos</h1>
+      <p class="text-gray-600">Encuentra los mejores muebles para tu hogar</p>
+    </div>
+
+    {error ? (
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <p class="text-red-700">{error}</p>
+        <p class="text-red-500 text-sm mt-2">Verifica que el servidor esté ejecutándose</p>
+      </div>
+    ) : (
+      <ProductGrid products={products} />
+    )}
+  </div>
+</Layout>

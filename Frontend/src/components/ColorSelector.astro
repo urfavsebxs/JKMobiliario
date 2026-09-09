@@ -1,0 +1,61 @@
+---
+import type { ProductColor } from "../lib/types";
+
+interface Props {
+  colors: ProductColor[];
+  selectedColor?: string;
+}
+
+const { colors, selectedColor } = Astro.props;
+---
+
+<div class="space-y-3">
+  <h3 class="text-sm font-medium text-gray-900">Colores</h3>
+  <div class="flex flex-wrap gap-3">
+    {colors.map((color) => (
+      <button
+        class={`relative w-10 h-10 rounded-full border-2 transition-all color-btn ${
+          selectedColor === color.name
+            ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2"
+            : "border-gray-200 hover:border-gray-400"
+        }`}
+        style={`background-color: ${color.hex}`}
+        title={color.name}
+        data-color={color.name}
+        data-hex={color.hex}
+      >
+        {color.hex === "#FFFFFF" && (
+          <span class="absolute inset-0 rounded-full border border-gray-200"></span>
+        )}
+      </button>
+    ))}
+  </div>
+  {selectedColor && (
+    <p class="text-sm text-gray-600">Seleccionado: {selectedColor}</p>
+  )}
+</div>
+
+<script>
+  const colorBtns = document.querySelectorAll(".color-btn");
+  
+  colorBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      colorBtns.forEach((b) => {
+        b.classList.remove("border-gray-900", "ring-2", "ring-gray-900", "ring-offset-2");
+        b.classList.add("border-gray-200");
+      });
+      
+      btn.classList.remove("border-gray-200");
+      btn.classList.add("border-gray-900", "ring-2", "ring-gray-900", "ring-offset-2");
+      
+      const event = new CustomEvent("colorchange", {
+        detail: {
+          color: btn.getAttribute("data-color"),
+          hex: btn.getAttribute("data-hex"),
+        },
+        bubbles: true,
+      });
+      document.dispatchEvent(event);
+    });
+  });
+</script>

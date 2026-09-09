@@ -1,0 +1,48 @@
+---
+interface Props {
+  sizes: string[];
+  selectedSize?: string;
+}
+
+const { sizes, selectedSize } = Astro.props;
+---
+
+<div class="space-y-3">
+  <h3 class="text-sm font-medium text-gray-900">Medidas</h3>
+  <div class="flex flex-wrap gap-2">
+    {sizes.map((size) => (
+      <button
+        class={`px-4 py-2 text-sm rounded-md border transition-colors size-btn ${
+          selectedSize === size
+            ? "border-gray-900 bg-gray-900 text-white"
+            : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+        }`}
+        data-size={size}
+      >
+        {size}
+      </button>
+    ))}
+  </div>
+</div>
+
+<script>
+  const sizeBtns = document.querySelectorAll(".size-btn");
+  
+  sizeBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      sizeBtns.forEach((b) => {
+        b.classList.remove("border-gray-900", "bg-gray-900", "text-white");
+        b.classList.add("border-gray-300", "bg-white", "text-gray-700");
+      });
+      
+      btn.classList.remove("border-gray-300", "bg-white", "text-gray-700");
+      btn.classList.add("border-gray-900", "bg-gray-900", "text-white");
+      
+      const event = new CustomEvent("sizechange", {
+        detail: { size: btn.getAttribute("data-size") },
+        bubbles: true,
+      });
+      document.dispatchEvent(event);
+    });
+  });
+</script>
