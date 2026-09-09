@@ -91,21 +91,28 @@ export default function ProductForm({ productId, product }: Props) {
     const token = localStorage.getItem("token");
     if (!token) return;
 
+    if (!window.confirm("¿Estás seguro de eliminar esta imagen?")) return;
+
     try {
-      const res = await fetch(`${API_URL}/api/products/${productId}/image`, {
+      const url = `${API_URL}/api/products/${productId}/image?imageUrl=${encodeURIComponent(imageUrl)}`;
+      const res = await fetch(url, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ imageUrl }),
       });
 
-      if (res.ok) {
-        setExistingImages(existingImages.filter((img) => img !== imageUrl));
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Error al eliminar la imagen");
+        return;
       }
+
+      setExistingImages(existingImages.filter((img) => img !== imageUrl));
     } catch (err) {
       console.error("Error deleting image:", err);
+      alert("Error al conectar con el servidor");
     }
   };
 
