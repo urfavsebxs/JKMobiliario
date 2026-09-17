@@ -1,15 +1,21 @@
 ---
-import CartButton from "../components/react/CartButton";
+import Nav from "../components/site/Nav.astro";
+import Footer from "../components/site/Footer.astro";
 import "../styles/global.css";
 
 interface Props {
   title: string;
   description?: string;
+  navMode?: "overlay" | "solid";
+  bodyClass?: string;
 }
 
-const { title, description = "Tienda de muebles de calidad" } = Astro.props;
-const userCookie = Astro.cookies.get("user")?.value;
-const currentUser = userCookie ? JSON.parse(userCookie) : null;
+const {
+  title,
+  description = "Diseño y mobiliario de alta gama pensado para crear ambientes únicos.",
+  navMode = "solid",
+  bodyClass = "bg-black text-white",
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -21,46 +27,20 @@ const currentUser = userCookie ? JSON.parse(userCookie) : null;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
-    <title>{title} | JKMobiliario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kapakana&family=Sofia+Sans+Semi+Condensed:wght@300;500;700&family=Inclusive+Sans:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>{title} | JK Mobiliario</title>
   </head>
-  <body class="min-h-screen bg-gray-50 text-gray-900">
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-      <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <a href="/" class="text-xl font-bold text-gray-900">JKMobiliario</a>
-          <div class="flex items-center gap-6">
-            <a href="/" class="text-gray-600 hover:text-gray-900 transition-colors">Productos</a>
-            {currentUser?.role === "admin" && (
-              <a href="/admin" class="text-gray-600 hover:text-gray-900 transition-colors">Admin</a>
-            )}
-            {currentUser ? (
-              <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-600">{currentUser.name}</span>
-                <button
-                  id="logout-btn"
-                  class="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Salir
-                </button>
-              </div>
-            ) : (
-              <a href="/login" class="text-gray-600 hover:text-gray-900 transition-colors">Iniciar Sesión</a>
-            )}
-            <CartButton client:load />
-          </div>
-        </div>
-      </nav>
-    </header>
-
+  <body class={bodyClass}>
+    <Nav mode={navMode} />
     <main>
       <slot />
     </main>
-
-    <footer class="bg-white border-t mt-16">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p class="text-center text-gray-500 text-sm">&copy; {new Date().getFullYear()} JKMobiliario. Todos los derechos reservados.</p>
-      </div>
-    </footer>
+    <Footer />
 
     <script>
       const logoutBtn = document.getElementById("logout-btn");

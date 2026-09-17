@@ -22,42 +22,74 @@ try {
 }
 ---
 
-<Layout title={product?.name || "Producto"}>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<Layout title={product?.name || "Producto"} bodyClass="bg-jk-surface text-jk-ink">
+  <div class="mx-auto max-w-[1440px] px-5 py-10 lg:px-[131px]">
     {error ? (
-      <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+      <div class="rounded-lg border border-jk-gold bg-white p-6 text-center">
         <p class="text-red-700">{error}</p>
-        <a href="/" class="mt-4 inline-block text-blue-600 hover:underline">Volver al catálogo</a>
+        <a href="/catalogo" class="mt-4 inline-block text-jk-gold-deep hover:underline"
+          >Volver al catálogo</a
+        >
       </div>
-    ) : product && (
-      <div class="mb-4">
-        <a href="/" class="text-sm text-gray-500 hover:text-gray-700">← Volver al catálogo</a>
-      </div>
+    ) : (
+      product && (
+        <div class="mb-6">
+          <a
+            href="/catalogo"
+            class="font-sans text-[15px] text-jk-gold-deep hover:underline"
+            >← Volver al catálogo</a
+          >
+        </div>
+      )
     )}
 
-    {product && (
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        <ImageGallery images={product.images} name={product.name} />
+    {
+      product && (
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+          <ImageGallery images={product.images} name={product.name} />
 
-        <div class="space-y-6">
-          <div>
-            <p class="text-sm text-gray-500 uppercase tracking-wide mb-2">{product.category}</p>
-            <h1 class="text-2xl lg:text-3xl font-bold text-gray-900">{product.name}</h1>
-          </div>
+          <div class="space-y-6">
+            <div>
+              <p class="mb-2 font-sans text-[14px] uppercase tracking-wide text-jk-gold-muted">
+                {product.category}
+              </p>
+              <h1 class="font-sans text-[28px] font-bold lg:text-[36px]">{product.name}</h1>
+            </div>
 
-          <ProductOptions product={product} client:load />
+            <ProductOptions product={product} client:load />
 
-          <div class="pt-4 border-t">
-            <h3 class="text-sm font-medium text-gray-900 mb-2">Descripción</h3>
-            <p class="text-gray-600 text-sm leading-relaxed">{product.description}</p>
-          </div>
+            <div class="border-t border-jk-gold/40 pt-4">
+              <h2 class="mb-2 font-sans text-[16px] font-semibold">Descripción</h2>
+              <p class="font-sans text-[15px] leading-relaxed text-[#49454F]">
+                {product.description}
+              </p>
+            </div>
 
-          <div class="pt-4 border-t">
-            <h3 class="text-sm font-medium text-gray-900 mb-2">Dimensiones</h3>
-            <p class="text-gray-600 text-sm">{product.dimensions}</p>
+            <div class="border-t border-jk-gold/40 pt-4">
+              <h2 class="mb-2 font-sans text-[16px] font-semibold">Dimensiones</h2>
+              <p class="font-sans text-[15px] text-[#49454F]">{product.dimensions}</p>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )
+    }
+
+    {
+      product && (
+        <section id="vista-3d" class="mt-16 border-t border-jk-gold/40 pt-8">
+          <h2 class="font-sans text-[20px] font-semibold lg:text-[24px]">Vista 3D</h2>
+          <p class="mt-1 font-sans text-[15px] text-[#49454F]">
+            Explora el producto desde cualquier ángulo.
+          </p>
+
+          <!-- Espacio reservado para el visor 3D -->
+          <div
+            id="visor-3d"
+            data-product-id={product._id}
+            class="mt-6 flex aspect-[16/9] w-full items-center justify-center rounded-[4px] border border-jk-gold bg-jk-mist"
+          ></div>
+        </section>
+      )
+    }
   </div>
 </Layout>

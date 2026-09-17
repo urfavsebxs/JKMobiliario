@@ -1,0 +1,41 @@
+---
+const columnas = [
+  { titulo: "Camas", slug: "camas", items: ["Familiar", "Pie de cama", "Camarotes"] },
+  { titulo: "Sofás", slug: "sofas", items: ["Interiores", "Esquineros"] },
+  { titulo: "Sillas", slug: "sillas", items: ["Exteriores", "Interiores", "Auxiliares"] },
+  { titulo: "Mesas", slug: "mesas", items: ["De centro", "Auxiliares", "Nocheros"] },
+];
+---
+
+<nav
+  aria-label="Subcategorías"
+  class="flex flex-col gap-8 lg:flex-row lg:gap-0"
+>
+  {
+    columnas.map((columna) => (
+      <div class="flex lg:w-[233px]">
+        <a
+          href={`/catalogo/${columna.slug}`}
+          class="mt-[7px] w-[79px] shrink-0 font-sans text-[24px] font-bold leading-[36px] text-white transition-opacity hover:opacity-80"
+        >
+          {columna.titulo}
+        </a>
+
+        <span class="mx-[10px] mt-[10px] h-[86px] w-px shrink-0 bg-jk-gold/85" />
+
+        <ul>
+          {columna.items.map((item) => (
+            <li>
+              <a
+                href={`/catalogo/${columna.slug}`}
+                class="block font-sans text-[16px] leading-[36px] text-white/70 transition-colors hover:text-white"
+              >
+                {item}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</nav>

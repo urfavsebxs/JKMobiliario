@@ -17,7 +17,10 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
   const [customDepth, setCustomDepth] = useState<string>("");
   const [customHeight, setCustomHeight] = useState<string>("");
   const [additionalNotes, setAdditionalNotes] = useState<string>("");
-  const [isCustomSize, setIsCustomSize] = useState<boolean>(false);
+  // Sin tallas predefinidas el cliente siempre parte de sus propias medidas.
+  const [isCustomSize, setIsCustomSize] = useState<boolean>(
+    product.sizes.length === 0
+  );
 
   const hasVariants = product.variants && product.variants.length > 0;
 
@@ -183,30 +186,32 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
               {size}
             </button>
           ))}
-          <button
-            onClick={() => {
-              setIsCustomSize(!isCustomSize);
-              if (!isCustomSize) setSelectedSize(""); // Limpiar medida predefinida al cambiar a personalizada
-            }}
-            className={`px-4 py-2 text-sm rounded-md border transition-colors ${
-              isCustomSize
-                ? "border-green-600 bg-green-600 text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:border-green-500"
-            }`}
-            aria-pressed={isCustomSize}
-          >
-            ✏️ Medida personalizada
-          </button>
+          {product.sizes.length > 0 && (
+            <button
+              onClick={() => {
+                setIsCustomSize(!isCustomSize);
+                if (!isCustomSize) setSelectedSize(""); // Limpiar medida predefinida al cambiar a personalizada
+              }}
+              className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+                isCustomSize
+                  ? "border-jk-gold-deep bg-jk-gold-deep text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:border-jk-gold-deep"
+              }`}
+              aria-pressed={isCustomSize}
+            >
+              ✏️ Medida personalizada
+            </button>
+          )}
         </div>
       </div>
 
       {/* Campos de dimensiones personalizadas */}
       {isCustomSize && (
-        <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h3 className="text-sm font-medium text-green-900">
+        <div className="space-y-3 p-4 bg-jk-cream border border-jk-gold rounded-lg">
+          <h3 className="text-sm font-medium text-jk-gold-deep">
             Especifica las dimensiones deseadas
           </h3>
-          <p className="text-xs text-green-700">
+          <p className="text-xs text-jk-gold-deep">
             Ingresa las medidas en centímetros. Puedes dejar vacíos los campos que no apliquen.
           </p>
           <div className="grid grid-cols-3 gap-3">
@@ -224,7 +229,7 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
                 placeholder="Ej: 160"
                 value={customWidth}
                 onChange={(e) => setCustomWidth(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jk-gold-deep focus:border-jk-gold-deep"
               />
             </div>
             <div className="space-y-1">
@@ -241,7 +246,7 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
                 placeholder="Ej: 80"
                 value={customDepth}
                 onChange={(e) => setCustomDepth(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jk-gold-deep focus:border-jk-gold-deep"
               />
             </div>
             <div className="space-y-1">
@@ -258,7 +263,7 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
                 placeholder="Ej: 75"
                 value={customHeight}
                 onChange={(e) => setCustomHeight(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jk-gold-deep focus:border-jk-gold-deep"
               />
             </div>
           </div>
@@ -308,7 +313,7 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
           placeholder="Ej: Necesito color chocolate, con cajones adicionales, plazo de entrega urgente..."
           value={additionalNotes}
           onChange={(e) => setAdditionalNotes(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jk-gold-deep focus:border-jk-gold-deep resize-none"
         />
       </div>
 

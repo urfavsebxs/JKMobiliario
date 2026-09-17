@@ -9,17 +9,16 @@ interface Props {
 const { products } = Astro.props;
 ---
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-  {products.map((product) => (
-    <ProductCard product={product} />
-  ))}
+<div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[36px]">
+  {products.map((product) => <ProductCard product={product} />)}
 </div>
 
-{products.length === 0 && (
-  <div class="text-center py-16">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-    </svg>
-    <p class="text-gray-500 text-lg">No se encontraron productos</p>
-  </div>
-)}
+{
+  products.length === 0 && (
+    <div class="py-24 text-center">
+      <p class="font-sans text-[20px] text-jk-gold-muted">
+        No se encontraron productos
+      </p>
+    </div>
+  )
+}

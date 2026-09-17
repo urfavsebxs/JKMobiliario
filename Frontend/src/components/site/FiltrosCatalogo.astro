@@ -1,0 +1,99 @@
+---
+interface Props {
+  categoria?: string;
+  busqueda?: string;
+  medidaMin?: string;
+  medidaMax?: string;
+}
+
+const { categoria = "", busqueda = "", medidaMin = "", medidaMax = "" } = Astro.props;
+
+const categorias = ["TODO", "DISPONIBLE", "COTIZACIÓN", "DE FABRICA", "COLECCIÓN"];
+
+const chipBase =
+  "inline-flex h-[32px] items-center justify-center rounded-[10px] px-[11px] font-brand text-[16px] font-medium transition-colors";
+const chipOn = "bg-jk-gold-soft text-white";
+const chipOff = "border border-jk-gold text-jk-ink hover:bg-jk-gold/15";
+
+const activa = categoria.toUpperCase() || "TODO";
+---
+
+<form method="GET" class="pt-[23px]">
+  <label
+    class="flex h-[42px] w-full items-center gap-[10px] rounded-[18px] border border-jk-gold bg-white pl-[18px] lg:w-[606px]"
+  >
+    <svg
+      class="size-5 shrink-0 text-jk-ink"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7"></circle>
+      <path d="m20 20-3.5-3.5"></path>
+    </svg>
+    <input
+      type="search"
+      name="q"
+      value={busqueda}
+      placeholder="Buscar"
+      class="w-full bg-transparent font-sans text-[16px] text-jk-ink outline-none placeholder:text-[#6b6b6b]"
+    />
+  </label>
+
+  <div class="mt-[7px] flex flex-wrap gap-[10px]">
+    {
+      categorias.map((nombre) => (
+        <a
+          href={`/catalogo?categoria=${encodeURIComponent(nombre)}`}
+          class:list={[chipBase, activa === nombre ? chipOn : chipOff]}
+        >
+          {nombre}
+        </a>
+      ))
+    }
+  </div>
+
+  <div class="mt-[48px]">
+    <p class="font-sans text-[15px] font-light text-jk-gold-muted">MEDIDAS</p>
+    <span class="block h-px w-[184px] bg-jk-gold"></span>
+  </div>
+
+  <div class="mt-[9px] flex flex-wrap items-center gap-[9px]">
+    <input
+      type="number"
+      name="min"
+      value={medidaMin}
+      placeholder="MIN"
+      min="0"
+      class="h-[32px] w-[50px] rounded-[10px] border border-jk-gold bg-transparent px-[6px] text-center font-sans text-[14px] font-medium text-jk-ink outline-none placeholder:text-[#49454F]"
+    />
+    <input
+      type="number"
+      name="max"
+      value={medidaMax}
+      placeholder="MAX"
+      min="0"
+      class="h-[32px] w-[53px] rounded-[10px] border border-jk-gold bg-transparent px-[6px] text-center font-sans text-[14px] font-medium text-jk-ink outline-none placeholder:text-[#49454F]"
+    />
+    <button
+      type="submit"
+      class:list={[chipBase, "w-[33px] px-0", chipOn]}
+      aria-label="Aplicar filtro de medidas"
+    >
+      <svg
+        class="size-[14px]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m9 6 6 6-6 6"></path>
+      </svg>
+    </button>
+  </div>
+</form>

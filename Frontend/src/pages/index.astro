@@ -1,33 +1,309 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import ProductGrid from "../components/ProductGrid.astro";
-import { getProducts } from "../lib/api";
 
-let products = [];
-let error = null;
+const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
+const waHref = (texto: string) =>
+  whatsapp
+    ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(texto)}`
+    : "/#contacto";
 
-try {
-  const response = await getProducts(1, 12);
-  products = response.products;
-} catch (e) {
-  error = e instanceof Error ? e.message : "Error al cargar productos";
-}
+const valores = [
+  {
+    titulo: "DISEÑO",
+    detalle: "Lo mejor para tu confort.",
+    icono: "/images/jk/edit-a.svg",
+    tamano: "h-[70px] w-[70px]",
+  },
+  {
+    titulo: "FABRICACIÓN",
+    detalle: "Materiales de calidad.",
+    icono: "/images/jk/codepen-a.svg",
+    tamano: "h-[84px] w-[78px]",
+  },
+  {
+    titulo: "RENDER",
+    detalle: "Visualización semi realista.",
+    icono: "/images/jk/icon-render.png",
+    tamano: "h-[61px] w-[61px]",
+  },
+  {
+    titulo: "INSTALACIÓN",
+    detalle: "Entrega profesional y eficaz.",
+    icono: "/images/jk/icon-instalacion.png",
+    tamano: "h-[68px] w-[68px]",
+  },
+];
+
+const pilares = [
+  {
+    titulo: "01. Atención Personalizada",
+    detalle:
+      "Te acompañamos de principio a fin para encontrar y crear el inmueble que realmente se adapta a ti.",
+  },
+  {
+    titulo: "03. Asesoría Transparente",
+    detalle:
+      "Información clara y honesta durante todo el proceso, sin costos ni condiciones ocultas.",
+  },
+  {
+    titulo: "04. Posicionamiento y Confianza",
+    detalle:
+      "Nuestro conocimiento del mercado nos permite ayudarte a tomar decisiones seguras y acertadas.",
+  },
+];
+
+const categorias = [
+  { nombre: "Camas", imagen: "/images/jk/g1.jpg", slug: "camas" },
+  { nombre: "Muebles", imagen: "/images/jk/g2.jpg", slug: "muebles" },
+  { nombre: "Centros de TV", imagen: "/images/jk/g3.jpg", slug: "centros-de-tv" },
+];
 ---
 
-<Layout title="Productos">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Nuestros Productos</h1>
-      <p class="text-gray-600">Encuentra los mejores muebles para tu hogar</p>
+<Layout
+  title="El espacio de tus sueños"
+  navMode="overlay"
+  bodyClass="bg-black text-white"
+>
+  <!-- Hero -->
+  <section class="relative">
+    <div class="absolute inset-x-0 top-0 h-[1000px] overflow-hidden">
+      <img
+        src="/images/jk/hero.jpg"
+        alt=""
+        class="h-full w-full object-cover opacity-[0.77]"
+      />
+      <div
+        class="absolute inset-x-0 bottom-0 h-[143px] bg-linear-to-b from-transparent to-black"
+      >
+      </div>
     </div>
 
-    {error ? (
-      <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <p class="text-red-700">{error}</p>
-        <p class="text-red-500 text-sm mt-2">Verifica que el servidor esté ejecutándose</p>
+    <div
+      class="relative mx-auto max-w-[1440px] px-5 pt-[360px] pb-24 lg:px-[93px] lg:pt-[595px] lg:pb-[143px]"
+    >
+      <h1
+        class="jk-hero-text max-w-[714px] font-sans text-[40px] font-bold leading-[normal] tracking-[-1.28px] lg:text-[64px]"
+      >
+        El espacio de tus sueños
+      </h1>
+      <p
+        class="mt-6 max-w-[543px] font-sans text-[20px] font-normal leading-[1.5] text-white lg:text-[28px]"
+      >
+        Diseño y mobiliario de alta gama pensado para crear ambientes únicos.
+      </p>
+    </div>
+  </section>
+
+  <!-- Concepto + valores -->
+  <section class="mx-auto max-w-[1440px] px-5 pt-20 pb-16 lg:px-[125px] lg:pt-0 lg:pb-[119px]">
+    <div class="lg:grid lg:grid-cols-[524px_minmax(0,660px)]">
+      <div class="flex flex-col lg:pt-[66px]">
+        <p
+          class="font-sans leading-[1.007] tracking-[2.16px] text-white"
+        >
+          <span class="block text-[28px] lg:text-[36px]">DEL CONCEPTO A LA</span>
+          <span
+            class="jk-gold-text mt-[7px] block font-display text-[72px] leading-[1.02] tracking-[7.68px] lg:mt-[13px] lg:text-[128px]"
+            >Realidad</span
+          >
+        </p>
+
+        <p
+          class="mt-2 max-w-[400px] font-sans text-[20px] font-normal leading-[1.5] text-white lg:-mt-[5px] lg:text-[28px]"
+        >
+          Diseño y mobiliario de alta gama, pensado para crear ambientes únicos e
+          irremplazables en tu hogar.
+        </p>
+
+        <a
+          href="/catalogo"
+          class="jk-pill-gradient mt-10 flex h-[67px] w-full max-w-[299px] items-center justify-center self-start rounded-full font-sans text-[18px] font-bold text-black transition-opacity hover:opacity-90 lg:mt-auto lg:text-[20px]"
+        >
+          Transforma tu hogar
+        </a>
       </div>
-    ) : (
-      <ProductGrid products={products} />
-    )}
-  </div>
+
+      <div class="mt-12 grid gap-6 lg:mt-0 lg:grid-cols-2 lg:gap-x-[40px] lg:gap-y-[41px] lg:pt-[54px]">
+        {
+          valores.map((valor) => (
+            <article class="relative h-[295px] overflow-hidden rounded-[10px] border border-jk-gold">
+              <div class="jk-card-bar absolute left-[45px] top-0 h-[146px] w-[102px] rounded-b-[18px]" />
+              <div class="absolute left-[45px] top-0 flex h-[146px] w-[102px] items-center justify-center">
+                <img
+                  src={valor.icono}
+                  alt=""
+                  class={`${valor.tamano} object-contain`}
+                  loading="lazy"
+                />
+              </div>
+              <div class="absolute left-[45px] top-[164px] w-[220px]">
+                <p class="font-sans text-[20px] font-bold leading-[34px] text-jk-gold">
+                  {valor.titulo}
+                </p>
+                <p class="font-sans text-[20px] font-normal leading-[34px] text-white">
+                  {valor.detalle}
+                </p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Galería destacada -->
+  <section class="bg-jk-ink">
+    <div class="relative mx-auto max-w-[1440px] px-5 py-16 lg:h-[820px] lg:px-0 lg:py-0">
+      <div
+        class="grid grid-cols-2 gap-3 lg:absolute lg:left-[133px] lg:top-[125px] lg:block lg:h-[570px] lg:w-[734px] lg:gap-0"
+      >
+        <img
+          src="/images/jk/d2.jpg"
+          alt="Sala con mobiliario a medida"
+          class="col-span-1 aspect-[342/325] w-full rounded-[3px] object-cover lg:absolute lg:left-0 lg:top-0 lg:h-[325px] lg:w-[342px]"
+          loading="lazy"
+        />
+        <img
+          src="/images/jk/d1.jpg"
+          alt="Comedor en madera"
+          class="col-span-1 aspect-[381/426] w-full rounded-[3px] object-cover lg:absolute lg:left-[353px] lg:top-[74px] lg:h-[426px] lg:w-[381px]"
+          loading="lazy"
+        />
+        <img
+          src="/images/jk/d3.jpg"
+          alt="Detalle de mobiliario"
+          class="col-span-2 aspect-[342/233] w-full rounded-[3px] object-cover lg:absolute lg:left-0 lg:top-[337px] lg:h-[233px] lg:w-[342px]"
+          loading="lazy"
+        />
+      </div>
+
+      <div class="mt-10 lg:absolute lg:left-[909px] lg:top-[199px] lg:mt-0 lg:w-[378px]">
+        <h2
+          class="font-sans text-[32px] font-bold leading-[1.007] tracking-[-0.8px] text-white lg:text-[40px]"
+        >
+          <span class="font-normal">Diseñamos para tu </span>
+          <span
+            class="font-display text-[70px] leading-[0.98] tracking-[-3.9px] text-jk-gold-bright lg:text-[124px]"
+            >Espacio</span
+          >
+        </h2>
+        <p
+          class="mt-6 font-sans text-[20px] font-normal leading-[1.5] text-white lg:mt-[10px] lg:text-[28px]"
+        >
+          Cada pieza nace para integrarse, complementar y transformar ambientes
+          con personalidad.
+        </p>
+        <a
+          href={waHref("Hola, quiero solicitar asesoría para un proyecto de mobiliario.")}
+          target={whatsapp ? "_blank" : undefined}
+          rel={whatsapp ? "noopener noreferrer" : undefined}
+          class="jk-pill-gradient mt-[39px] flex h-[67px] w-full max-w-[299px] items-center justify-center rounded-[76px] font-sans text-[18px] font-bold text-black transition-opacity hover:opacity-90 lg:text-[20px]"
+        >
+          Solicitar asesoria &gt;
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Identidad + pilares -->
+  <section id="nosotros" class="bg-black">
+    <div class="mx-auto max-w-[1440px] px-5 pt-16 lg:pt-[125px]">
+      <h2 class="text-center">
+        <span
+          class="block font-sans text-[26px] font-normal leading-[1.007] tracking-[1.5px] text-white lg:text-[36px] lg:tracking-[2.16px]"
+          >LO QUE NOS</span
+        >
+        <span
+          class="jk-gold-text block font-display text-[72px] leading-[0.98] tracking-[3px] lg:text-[128px] lg:tracking-[7.68px]"
+          >Identifica</span
+        >
+      </h2>
+    </div>
+
+    <div class="mx-auto mt-12 max-w-[1353px] px-5 lg:mt-[82px] lg:px-0">
+      <div class="relative h-[70px]">
+        <div class="absolute inset-x-[16.667%] top-0 h-px bg-white/25"></div>
+        <div class="absolute left-[16.667%] top-0 h-[70px] w-px bg-white/25"></div>
+        <div class="absolute left-1/2 top-0 h-[70px] w-px bg-white/25"></div>
+        <div class="absolute right-[16.667%] top-0 h-[70px] w-px bg-white/25"></div>
+      </div>
+
+      <div class="mt-8 grid gap-10 lg:mt-[34px] lg:grid-cols-3 lg:gap-0">
+        {
+          pilares.map((pilar) => (
+            <div class="mx-auto max-w-[360px] text-center">
+              <p class="font-sans text-[20px] font-semibold leading-[30px] text-jk-gold">
+                {pilar.titulo}
+              </p>
+              <p class="mx-auto mt-[31px] max-w-[220px] font-sans text-[20px] font-normal leading-[1.2] text-jk-mist">
+                {pilar.detalle}
+              </p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Categorías -->
+  <section
+    class="mx-auto max-w-[1440px] px-5 pt-20 pb-16 lg:px-[131px] lg:pt-[273px] lg:pb-[238px]"
+  >
+    <div class="grid gap-8 lg:grid-cols-3 lg:gap-[31px]">
+      {
+        categorias.map((categoria) => (
+          <a href={`/catalogo/${categoria.slug}`} class="block">
+            <figure class="relative">
+              <div class="overflow-hidden rounded-[4px] border border-jk-gold opacity-74">
+                <img
+                  src={categoria.imagen}
+                  alt={categoria.nombre}
+                  class="h-[360px] w-full object-cover lg:h-[495px]"
+                  loading="lazy"
+                />
+              </div>
+              <figcaption class="absolute bottom-[29px] left-[22px]">
+                <span class="block h-px w-[48px] bg-jk-gold" />
+                <span class="mt-[6px] block font-sans text-[24px] font-normal text-white">
+                  {categoria.nombre}
+                </span>
+              </figcaption>
+            </figure>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Asesoría -->
+  <section id="contacto" class="bg-jk-surface">
+    <div
+      class="mx-auto flex max-w-[1440px] flex-col gap-8 px-5 py-12 lg:h-[236px] lg:flex-row lg:items-center lg:justify-between lg:gap-0 lg:px-[80px] lg:py-0"
+    >
+      <p
+        class="font-sans text-[32px] font-normal tracking-[-0.96px] text-black lg:text-[48px]"
+      >
+        Asesoria personalizada
+      </p>
+
+      <div class="flex flex-col gap-4 sm:flex-row lg:items-center lg:gap-[35px]">
+        <a
+          href={waHref("Hola, quiero contactarlos para una asesoría.")}
+          target={whatsapp ? "_blank" : undefined}
+          rel={whatsapp ? "noopener noreferrer" : undefined}
+          class="jk-btn-gradient flex h-[69px] items-center justify-center rounded-[11px] px-8 font-sans text-[20px] font-medium tracking-[-0.48px] text-white shadow-[0px_1px_1px_rgba(0,0,0,0.05)] transition-opacity hover:opacity-90 lg:text-[24px]"
+        >
+          CONTÁCTANOS POR WHATSAPP
+        </a>
+        <a
+          href={waHref("Hola, quiero asesoría con el asistente IA.")}
+          target={whatsapp ? "_blank" : undefined}
+          rel={whatsapp ? "noopener noreferrer" : undefined}
+          class="jk-btn-gradient flex h-[69px] items-center justify-center rounded-[11px] px-8 font-sans text-[20px] font-medium tracking-[-0.48px] text-white shadow-[0px_1px_1px_rgba(0,0,0,0.05)] transition-opacity hover:opacity-90 lg:text-[24px]"
+        >
+          ASESOR IA
+        </a>
+      </div>
+    </div>
+  </section>
 </Layout>

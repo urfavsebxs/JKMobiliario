@@ -1,0 +1,77 @@
+---
+export const prerender = false;
+
+import Layout from "../layouts/Layout.astro";
+import FiltrosCatalogo from "../components/site/FiltrosCatalogo.astro";
+import ProductGrid from "../components/ProductGrid.astro";
+import { getProducts } from "../lib/api";
+import type { Product } from "../lib/types";
+
+const categoria = (Astro.url.searchParams.get("categoria") || "").trim();
+const busqueda = (Astro.url.searchParams.get("q") || "").trim();
+const medidaMin = (Astro.url.searchParams.get("min") || "").trim();
+const medidaMax = (Astro.url.searchParams.get("max") || "").trim();
+
+let productos: Product[] = [];
+try {
+  const { products } = await getProducts(1, 100);
+  productos = products;
+} catch {
+  productos = [];
+}
+
+const numerosDe = (p: Product) =>
+  [p.dimensions, ...p.sizes]
+    .join(" ")
+    .match(/\d+(?:[.,]\d+)?/g)
+    ?.map((n) => Number(n.replace(",", "."))) ?? [];
+
+const min = medidaMin ? Number(medidaMin) : null;
+const max = medidaMax ? Number(medidaMax) : null;
+
+const filtrados = productos.filter((p) => {
+  const cat = categoria.toUpperCase();
+
+  if (cat && cat !== "TODO") {
+    const coincideCategoria = p.category?.toUpperCase().includes(cat);
+    const semantico =
+      (cat === "DISPONIBLE" && p.stock > 0) || (cat === "COTIZACIÓN" && p.price <= 0);
+    if (!coincideCategoria && !semantico) return false;
+  }
+
+  if (busqueda) {
+    const texto = `${p.name} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
+    if (!texto.includes(busqueda.toLowerCase())) return false;
+  }
+
+  if (min !== null || max !== null) {
+    const medidas = numerosDe(p);
+    const dentro = medidas.some(
+      (n) => (min === null || n >= min) && (max === null || n <= max),
+    );
+    if (!dentro) return false;
+  }
+
+  return true;
+});
+---
+
+<Layout
+  title="Catálogo"
+  bodyClass="bg-jk-surface text-jk-ink"
+>
+  <div class="mx-auto max-w-[1440px] px-5 pb-24 lg:px-[131px] lg:pb-[201px]">
+    <h1 class="sr-only">Catálogo</h1>
+
+    <FiltrosCatalogo
+      categoria={categoria}
+      busqueda={busqueda}
+      medidaMin={medidaMin}
+      medidaMax={medidaMax}
+    />
+
+    <div class="mt-[72px]">
+      <ProductGrid products={filtrados} />
+    </div>
+  </div>
+</Layout>
