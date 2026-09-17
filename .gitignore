@@ -11,3 +11,5 @@ Backend/package-lock.json
 AGENTS.md
 Frontend/AGENTS.md
 Frontend/README.md
+.agents/
+skills-lock.json
