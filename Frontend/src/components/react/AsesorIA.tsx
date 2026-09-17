@@ -53,6 +53,20 @@ function esMensaje(valor: unknown): valor is Mensaje {
   );
 }
 
+/**
+ * Gemini a veces devuelve Markdown (p. ej. **301 517 9340**). El panel muestra
+ * texto plano, así que se limpian los marcadores más comunes en lugar de
+ * inyectar HTML (nada de `dangerouslySetInnerHTML`). Patrones lineales, sin
+ * riesgo de retroceso catastrófico.
+ */
+function limpiarFormato(texto: string): string {
+  return texto
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/__([^_\n]+)__/g, "$1")
+    .replace(/(^|\s)\*([^*\n]+)\*(?=\s|[.,;:!?]|$)/g, "$1$2")
+    .replace(/`([^`\n]+)`/g, "$1");
+}
+
 function IconoChat() {
   return (
     <svg
@@ -252,7 +266,7 @@ export default function AsesorIA() {
 
         setMensajes((previos) => [
           ...previos,
-          { rol: "asesor", texto: datos.respuesta!.trim() },
+          { rol: "asesor", texto: limpiarFormato(datos.respuesta!.trim()) },
         ]);
       } catch {
         setMensajes((previos) => [

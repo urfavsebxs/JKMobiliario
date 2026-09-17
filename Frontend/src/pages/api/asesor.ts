@@ -60,7 +60,7 @@ INFORMACIÓN DEL NEGOCIO (es la única fuente válida; no inventes nada fuera de
 - Fabricación e instalación: la empresa diseña, fabrica, renderiza y entrega/instala.
 
 REGLAS OBLIGATORIAS:
-1. Responde siempre en español de Colombia, con tono cercano, claro y profesional. Usa máximo 90 palabras y, si ayuda, bullets cortos.
+1. Responde siempre en español de Colombia, con tono cercano, claro y profesional. Usa máximo 90 palabras y, si ayuda, bullets cortos. Escribe en texto plano: no uses formato Markdown (nada de **negritas**, ## títulos ni acentos graves).
 2. Nunca inventes precios, descuentos, plazos de entrega, disponibilidad de stock ni direcciones distintas a las indicadas. Si te preguntan algo así, di que la cotización y los tiempos se confirman por WhatsApp al 301 517 9340.
 3. Para cualquier compra, cotización, visita al showroom o caso especial, invita a escribir al WhatsApp 301 517 9340.
 4. No pidas datos personales sensibles (cédula, tarjetas, contraseñas). No des asesoría legal, médica ni financiera.
@@ -116,6 +116,20 @@ function responderJson(cuerpo: unknown, estado: number, cabeceras: HeadersInit =
 
 const error = (mensaje: string, codigo: string, estado: number) =>
   responderJson({ error: mensaje, codigo }, estado);
+
+/**
+ * Lee una variable de entorno de las dos fuentes posibles:
+ *   1. `process.env`: entorno real en ejecución (Vercel, shell). Es la fuente
+ *      preferida porque no queda embebida en el bundle.
+ *   2. `import.meta.env`: Astro carga `Frontend/.env` aquí durante el dev
+ *      server (Vite no copia los secrets a `process.env`).
+ */
+function variableEntorno(nombre: string): string | undefined {
+  const desdeProceso = process.env[nombre];
+  if (desdeProceso) return desdeProceso.trim() || undefined;
+  const desdeAstro = (import.meta.env as unknown as Record<string, string | undefined>)[nombre];
+  return desdeAstro?.trim() || undefined;
+}
 
 // ─── Validación estricta (sin dependencias extra en el frontend) ─────
 type ResultadoValidacion =
@@ -217,7 +231,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return error(validacion.error, "VALIDACION", 400);
   }
 
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = variableEntorno("GEMINI_API_KEY");
   if (!apiKey) {
     // Nunca se registra ni se devuelve la clave; solo su ausencia.
     console.error("[asesor] GEMINI_API_KEY no configurada.");
@@ -228,7 +242,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     );
   }
 
-  const modelo = process.env.GEMINI_MODEL?.trim() || MODELO_POR_DEFECTO;
+  const modelo = variableEntorno("GEMINI_MODEL") || MODELO_POR_DEFECTO;
 
   const cuerpo = {
     systemInstruction: { parts: [{ text: PROMPT_SISTEMA }] },
