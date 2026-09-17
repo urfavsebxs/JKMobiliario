@@ -16,10 +16,10 @@ const navLinks = [
 ];
 
 const serviceLinks = [
-  { label: "Registrate", href: "/login" },
-  { label: "Privacidad", href: "/#contacto" },
-  { label: "Asesoría", href: "/#contacto" },
-  { label: "Asistente IA", href: "/#contacto" },
+  { label: "Registrate", href: "/login", asesor: false },
+  { label: "Privacidad", href: "/#contacto", asesor: false },
+  { label: "Asesoría", href: "/#contacto", asesor: false },
+  { label: "Asistente IA", href: "/#contacto", asesor: true },
 ];
 
 const social = [
@@ -79,7 +79,7 @@ const linkClass =
             {
               serviceLinks.map((link) => (
                 <li>
-                  <a href={link.href} class={linkClass}>
+                  <a href={link.href} class={linkClass} data-jk-asesor={link.asesor ? "" : undefined}>
                     {link.label}
                   </a>
                 </li>

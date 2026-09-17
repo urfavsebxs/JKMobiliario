@@ -109,3 +109,26 @@
     scroll-behavior: auto;
   }
 }
+
+/* Widget "Asesor IA": entradas sutiles que solo corren con motion-safe. */
+@keyframes jk-asesor-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes jk-asesor-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
