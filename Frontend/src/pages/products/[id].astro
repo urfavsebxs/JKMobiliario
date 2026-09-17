@@ -4,12 +4,36 @@ export const prerender = false;
 import Layout from "../../layouts/Layout.astro";
 import ImageGallery from "../../components/ImageGallery.astro";
 import ProductOptions from "../../components/react/ProductOptions";
+import Visor3D from "../../components/react/Visor3D";
 import { getProductById } from "../../lib/api";
 
 const { id } = Astro.params;
 
 if (!id) {
   return Astro.redirect("/");
+}
+
+// Mientras el backend no exponga un campo `model3d`, el visor se prueba con el
+// producto "Mesa de Prueba". Cualquier producto con `model3d` lo usa directo.
+interface ModeloProducto {
+  url: string;
+  /** Medidas reales del modelo en cm: permiten escalarlo según lo que pida el cliente. */
+  medidasBase?: { ancho?: number; largo?: number; alto?: number };
+}
+
+const MODELOS_DEMO: Record<string, ModeloProducto> = {
+  "6aa19e207d16444882d2bb63": {
+    url: "/models/mueble-demo.glb",
+    medidasBase: { ancho: 120, largo: 80, alto: 75 },
+  },
+};
+
+/** Lee "160x80x75 cm" como ancho × largo × alto (convención de muebles). */
+function parseDimensiones(texto?: string) {
+  const numeros =
+    texto?.match(/\d+(?:[.,]\d+)?/g)?.map((n) => Number(n.replace(",", "."))) ?? [];
+  if (numeros.length < 2) return undefined;
+  return { ancho: numeros[0], largo: numeros[1], alto: numeros[2] };
 }
 
 let product = null;
@@ -20,6 +44,12 @@ try {
 } catch (e) {
   error = e instanceof Error ? e.message : "Error al cargar el producto";
 }
+
+const modelo: ModeloProducto | undefined = product?.model3d
+  ? { url: product.model3d, medidasBase: parseDimensiones(product.dimensions) }
+  : product
+    ? MODELOS_DEMO[product._id]
+    : undefined;
 ---
 
 <Layout title={product?.name || "Producto"} bodyClass="bg-jk-surface text-jk-ink">
@@ -79,15 +109,24 @@ try {
         <section id="vista-3d" class="mt-16 border-t border-jk-gold/40 pt-8">
           <h2 class="font-sans text-[20px] font-semibold lg:text-[24px]">Vista 3D</h2>
           <p class="mt-1 font-sans text-[15px] text-[#49454F]">
-            Explora el producto desde cualquier ángulo.
+            Gíralo, acércalo y personaliza el color del acabado en tiempo real.
           </p>
 
-          <!-- Espacio reservado para el visor 3D -->
-          <div
-            id="visor-3d"
-            data-product-id={product._id}
-            class="mt-6 flex aspect-[16/9] w-full items-center justify-center rounded-[4px] border border-jk-gold bg-jk-mist"
-          ></div>
+          {modelo ? (
+            <Visor3D
+              client:visible
+              modelUrl={modelo.url}
+              medidasBase={modelo.medidasBase}
+              colores={product.colors}
+              nombre={product.name}
+            />
+          ) : (
+            <div class="mt-6 flex aspect-[16/9] w-full items-center justify-center rounded-[4px] border border-jk-gold bg-jk-mist">
+              <p class="px-6 text-center font-sans text-[14px] text-jk-gold-deep">
+                Vista 3D disponible próximamente para este producto.
+              </p>
+            </div>
+          )}
         </section>
       )
     }

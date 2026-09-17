@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { useStore } from "@nanostores/react";
 import type { Product, ProductVariant } from "../../lib/types";
+import { colorMueble, setColorMueble } from "../../lib/colorMueble";
+import { fijarMedidas, medidasMueble } from "../../lib/medidasMueble";
 
 interface ProductOptionsProps {
   product: Product;
@@ -22,6 +25,10 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
     product.sizes.length === 0
   );
 
+  // Color de acabado y medidas compartidos con el visor 3D.
+  const colorElegido = useStore(colorMueble);
+  const medidas = useStore(medidasMueble);
+
   const hasVariants = product.variants && product.variants.length > 0;
 
   useEffect(() => {
@@ -34,6 +41,45 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
       }
     }
   }, [selectedSize, selectedColor, product.variants, hasVariants]);
+
+  // Si el color elegido en el visor 3D coincide con uno del catálogo,
+  // sincronizamos el selector para no perder variante ni stock.
+  useEffect(() => {
+    if (!colorElegido) return;
+    const coincide = product.colors.find(
+      (color) => color.hex.toLowerCase() === colorElegido.hex.toLowerCase()
+    );
+    if (coincide) setSelectedColor(coincide.name);
+  }, [colorElegido, product.colors]);
+
+  // Publica en el store las medidas personalizadas que escribe el cliente,
+  // para que el visor 3D las refleje en vivo.
+  useEffect(() => {
+    if (!isCustomSize) {
+      fijarMedidas(null);
+      return;
+    }
+    fijarMedidas({
+      ancho: Number(customWidth),
+      alto: Number(customHeight),
+      profundo: Number(customDepth),
+    });
+  }, [isCustomSize, customWidth, customHeight, customDepth]);
+
+  // Recoge los cambios hechos desde el visor 3D (mismo store compartido).
+  // Comparamos numéricamente para no pisar el texto mientras se escribe.
+  useEffect(() => {
+    setCustomWidth((valor) =>
+      Number(valor || 0) === (medidas?.ancho ?? 0) ? valor : (medidas?.ancho?.toString() ?? "")
+    );
+    setCustomDepth((valor) =>
+      Number(valor || 0) === (medidas?.profundo ?? 0) ? valor : (medidas?.profundo?.toString() ?? "")
+    );
+    setCustomHeight((valor) =>
+      Number(valor || 0) === (medidas?.alto ?? 0) ? valor : (medidas?.alto?.toString() ?? "")
+    );
+    if (medidas) setIsCustomSize(true);
+  }, [medidas]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-CO", {
@@ -58,17 +104,30 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
   const handleWhatsAppClick = useCallback(() => {
     const whatsappNumber = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 
-    // Construir la línea de dimensiones
+    // Construir la línea de dimensiones (el visor 3D escribe en el mismo store)
     let dimensionLine = "";
     if (isCustomSize) {
+      const numero = (texto: string) => {
+        const n = Number(texto);
+        return Number.isFinite(n) && n > 0 ? n : undefined;
+      };
+      const ancho = medidas?.ancho ?? numero(customWidth);
+      const largo = medidas?.profundo ?? numero(customDepth);
+      const alto = medidas?.alto ?? numero(customHeight);
+
       const parts: string[] = [];
-      if (customWidth.trim()) parts.push(`Ancho: ${customWidth.trim()} cm`);
-      if (customDepth.trim()) parts.push(`Largo: ${customDepth.trim()} cm`);
-      if (customHeight.trim()) parts.push(`Alto: ${customHeight.trim()} cm`);
+      if (ancho) parts.push(`Ancho: ${ancho} cm`);
+      if (largo) parts.push(`Largo: ${largo} cm`);
+      if (alto) parts.push(`Alto: ${alto} cm`);
       dimensionLine = parts.length > 0 ? parts.join(" | ") : "A medida (sin especificar)";
     } else {
       dimensionLine = product.dimensions || selectedSize || "No especificado";
     }
+
+    // Color final: el elegido en el visor 3D tiene prioridad sobre el catálogo.
+    const colorTexto = colorElegido
+      ? `${colorElegido.nombre} (${colorElegido.hex})`
+      : selectedColor;
 
     // Construir el mensaje completo
     const messageLines: string[] = [
@@ -82,8 +141,8 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
       messageLines.push(`📏 *Medida seleccionada:* ${selectedSize}`);
     }
 
-    if (selectedColor) {
-      messageLines.push(`🎨 *Color:* ${selectedColor}`);
+    if (colorTexto) {
+      messageLines.push(`🎨 *Color:* ${colorTexto}`);
     }
 
     messageLines.push(`💰 *Precio base:* ${formatPrice(displayPrice)}`);
@@ -115,6 +174,8 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
     product,
     selectedSize,
     selectedColor,
+    colorElegido,
+    medidas,
     displayPrice,
     isCustomSize,
     customWidth,
@@ -275,27 +336,44 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-gray-900">Colores</h3>
           <div className="flex flex-wrap gap-3">
-            {product.colors.map((color) => (
-              <button
-                key={color.name}
-                onClick={() => setSelectedColor(color.name)}
-                className={`relative w-10 h-10 rounded-full border-2 transition-all ${
-                  selectedColor === color.name
-                    ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2"
-                    : "border-gray-200 hover:border-gray-400"
-                }`}
-                style={{ backgroundColor: color.hex }}
-                title={color.name}
-                aria-pressed={selectedColor === color.name}
-                aria-label={`Color: ${color.name}`}
-              >
-                {color.hex === "#FFFFFF" && (
-                  <span className="absolute inset-0 rounded-full border border-gray-200" aria-hidden="true"></span>
-                )}
-              </button>
-            ))}
+            {product.colors.map((color) => {
+              // El color del visor 3D manda: si no coincide, no marcamos ninguno.
+              const seleccionado =
+                selectedColor === color.name &&
+                (!colorElegido ||
+                  colorElegido.hex.toUpperCase() === color.hex.toUpperCase());
+
+              return (
+                <button
+                  key={color.name}
+                  onClick={() => {
+                    setSelectedColor(color.name);
+                    setColorMueble({ nombre: color.name, hex: color.hex.toUpperCase() });
+                  }}
+                  className={`relative w-10 h-10 rounded-full border-2 transition-all ${
+                    seleccionado
+                      ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2"
+                      : "border-gray-200 hover:border-gray-400"
+                  }`}
+                  style={{ backgroundColor: color.hex }}
+                  title={color.name}
+                  aria-pressed={seleccionado}
+                  aria-label={`Color: ${color.name}`}
+                >
+                  {color.hex === "#FFFFFF" && (
+                    <span
+                      className="absolute inset-0 rounded-full border border-gray-200"
+                      aria-hidden="true"
+                    ></span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <p className="text-sm text-gray-600">Seleccionado: {selectedColor}</p>
+          <p className="text-sm text-gray-600">
+            Seleccionado:{" "}
+            {colorElegido ? `${colorElegido.nombre} (${colorElegido.hex})` : selectedColor}
+          </p>
         </div>
       )}
 

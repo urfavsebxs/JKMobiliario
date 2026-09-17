@@ -24,6 +24,8 @@ export interface Product {
   sizes: string[];
   colors: ProductColor[];
   variants: ProductVariant[];
+  /** URL del modelo GLB para el visor 3D (opcional). */
+  model3d?: string;
   createdAt: string;
   updatedAt: string;
 }
