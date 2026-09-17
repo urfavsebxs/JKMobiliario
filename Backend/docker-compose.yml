@@ -2,22 +2,27 @@ services:
   backend:
     build: .
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     env_file:
       - .env
     depends_on:
       - mongodb
     networks:
       - jk-network
+    restart: unless-stopped
 
   mongodb:
     image: mongo:7.0
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASS:-changeme}
     volumes:
       - mongo-data:/data/db
     networks:
       - jk-network
+    restart: unless-stopped
 
 volumes:
   mongo-data:
