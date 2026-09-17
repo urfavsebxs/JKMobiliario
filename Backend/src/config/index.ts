@@ -14,6 +14,7 @@ export const config = {
   mongoUri: requireEnv("MONGODB_URI"),
   jwtSecret: requireEnv("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "24h",
+  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",").map((o) => o.trim()) ?? [],
   adminEmail: requireEnv("ADMIN_EMAIL"),
   adminPassword: requireEnv("ADMIN_PASSWORD"),
   minio: {
@@ -23,5 +24,5 @@ export const config = {
     accessKey: requireEnv("MINIO_ACCESS_KEY"),
     secretKey: requireEnv("MINIO_SECRET_KEY"),
   },
-  minioBucket: requireEnv("MINIO_BUCKET")
+  minioBucket: requireEnv("MINIO_BUCKET"),
 };

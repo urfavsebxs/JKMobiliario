@@ -12,8 +12,8 @@ export const create = async (req: Request, res: Response, next: NextFunction): P
 
 export const getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
     const result = await productService.getProducts(page, limit);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
@@ -58,9 +58,13 @@ export const updateStock = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+/**
+ * Remove image from product.
+ * imageUrl is now passed as a query parameter (e.g., DELETE /:id/image?imageUrl=...).
+ */
 export const removeImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { imageUrl } = req.body;
+    const imageUrl = req.query.imageUrl as string;
     const product = await productService.removeImage(req.params.id, imageUrl);
     res.status(200).json({ success: true, data: product });
   } catch (error) {
