@@ -72,7 +72,7 @@ const categorias = [
       <img
         src="/images/jk/hero.jpg"
         alt=""
-        class="h-full w-full object-cover opacity-[0.77]"
+        class="jk-zoom h-full w-full object-cover opacity-[0.77]"
       />
       <div
         class="absolute inset-x-0 bottom-0 h-[143px] bg-linear-to-b from-transparent to-black"
@@ -84,12 +84,12 @@ const categorias = [
       class="relative mx-auto max-w-[1440px] px-5 pt-[360px] pb-24 lg:px-[93px] lg:pt-[595px] lg:pb-[143px]"
     >
       <h1
-        class="jk-hero-text max-w-[714px] font-sans text-[40px] font-bold leading-[normal] tracking-[-1.28px] lg:text-[64px]"
+        class="jk-entra jk-entra-1 jk-hero-text max-w-[714px] font-sans text-[40px] font-bold leading-[normal] tracking-[-1.28px] lg:text-[64px]"
       >
         El espacio de tus sueños
       </h1>
       <p
-        class="mt-6 max-w-[543px] font-sans text-[20px] font-normal leading-[1.5] text-white lg:text-[28px]"
+        class="jk-entra jk-entra-2 mt-6 max-w-[543px] font-sans text-[20px] font-normal leading-[1.5] text-white lg:text-[28px]"
       >
         Diseño y mobiliario de alta gama pensado para crear ambientes únicos.
       </p>
@@ -102,6 +102,7 @@ const categorias = [
       <div class="flex flex-col lg:pt-[66px]">
         <p
           class="font-sans leading-[1.007] tracking-[2.16px] text-white"
+          data-anim
         >
           <span class="block text-[28px] lg:text-[36px]">DEL CONCEPTO A LA</span>
           <span
@@ -112,6 +113,8 @@ const categorias = [
 
         <p
           class="mt-2 max-w-[400px] font-sans text-[20px] font-normal leading-[1.5] text-white lg:-mt-[5px] lg:text-[28px]"
+          data-anim
+          data-anim-delay="120"
         >
           Diseño y mobiliario de alta gama, pensado para crear ambientes únicos e
           irremplazables en tu hogar.
@@ -120,6 +123,8 @@ const categorias = [
         <a
           href="/catalogo"
           class="jk-pill-gradient mt-10 flex h-[67px] w-full max-w-[299px] items-center justify-center self-start rounded-full font-sans text-[18px] font-bold text-black transition-opacity hover:opacity-90 lg:mt-auto lg:text-[20px]"
+          data-anim
+          data-anim-delay="220"
         >
           Transforma tu hogar
         </a>
@@ -127,8 +132,12 @@ const categorias = [
 
       <div class="mt-12 grid gap-6 lg:mt-0 lg:grid-cols-2 lg:gap-x-[40px] lg:gap-y-[41px] lg:pt-[54px]">
         {
-          valores.map((valor) => (
-            <article class="relative h-[295px] overflow-hidden rounded-[10px] border border-jk-gold">
+          valores.map((valor, i) => (
+            <article
+              class="relative h-[295px] overflow-hidden rounded-[10px] border border-jk-gold"
+              data-anim
+              data-anim-delay={i * 90}
+            >
               <div class="jk-card-bar absolute left-[45px] top-0 h-[146px] w-[102px] rounded-b-[18px]" />
               <div class="absolute left-[45px] top-0 flex h-[146px] w-[102px] items-center justify-center">
                 <img
@@ -164,22 +173,31 @@ const categorias = [
           alt="Sala con mobiliario a medida"
           class="col-span-1 aspect-[342/325] w-full rounded-[3px] object-cover lg:absolute lg:left-0 lg:top-0 lg:h-[325px] lg:w-[342px]"
           loading="lazy"
+          data-anim
         />
         <img
           src="/images/jk/d1.jpg"
           alt="Comedor en madera"
           class="col-span-1 aspect-[342/325] w-full rounded-[3px] object-cover lg:absolute lg:left-[353px] lg:top-[74px] lg:h-[426px] lg:w-[381px]"
           loading="lazy"
+          data-anim
+          data-anim-delay="120"
         />
         <img
           src="/images/jk/d3.jpg"
           alt="Detalle de mobiliario"
           class="col-span-2 aspect-[342/233] w-full rounded-[3px] object-cover lg:absolute lg:left-0 lg:top-[337px] lg:h-[233px] lg:w-[342px]"
           loading="lazy"
+          data-anim
+          data-anim-delay="220"
         />
       </div>
 
-      <div class="mt-10 lg:absolute lg:left-[909px] lg:top-[199px] lg:mt-0 lg:w-[378px]">
+      <div
+        class="mt-10 lg:absolute lg:left-[909px] lg:top-[199px] lg:mt-0 lg:w-[378px]"
+        data-anim
+        data-anim-delay="150"
+      >
         <h2
           class="font-sans text-[32px] font-bold leading-[1.007] tracking-[-0.8px] text-white lg:text-[40px]"
         >
@@ -210,7 +228,7 @@ const categorias = [
   <!-- Identidad + pilares -->
   <section id="nosotros" class="bg-black">
     <div class="mx-auto max-w-[1440px] px-5 pt-16 lg:pt-[125px]">
-      <h2 class="text-center">
+      <h2 class="text-center" data-anim>
         <span
           class="block font-sans text-[26px] font-normal leading-[1.007] tracking-[1.5px] text-white lg:text-[36px] lg:tracking-[2.16px]"
           >LO QUE NOS</span
@@ -225,16 +243,39 @@ const categorias = [
     <div class="mx-auto mt-12 max-w-[1353px] px-5 lg:mt-[82px] lg:px-0">
       <!-- Marco decorativo de 3 columnas: sólo tiene sentido en escritorio -->
       <div class="relative hidden h-[70px] lg:block">
-        <div class="absolute inset-x-[16.667%] top-0 h-px bg-white/25"></div>
-        <div class="absolute left-[16.667%] top-0 h-[70px] w-px bg-white/25"></div>
-        <div class="absolute left-1/2 top-0 h-[70px] w-px bg-white/25"></div>
-        <div class="absolute right-[16.667%] top-0 h-[70px] w-px bg-white/25"></div>
+        <div
+          class="absolute inset-x-[16.667%] top-0 h-px bg-white/25"
+          data-anim-linea="h"
+        >
+        </div>
+        <div
+          class="absolute left-[16.667%] top-0 h-[70px] w-px bg-white/25"
+          data-anim-linea="v"
+          data-anim-delay="80"
+        >
+        </div>
+        <div
+          class="absolute left-1/2 top-0 h-[70px] w-px bg-white/25"
+          data-anim-linea="v"
+          data-anim-delay="160"
+        >
+        </div>
+        <div
+          class="absolute right-[16.667%] top-0 h-[70px] w-px bg-white/25"
+          data-anim-linea="v"
+          data-anim-delay="240"
+        >
+        </div>
       </div>
 
       <div class="mt-8 grid gap-10 lg:mt-[34px] lg:grid-cols-3 lg:gap-0">
         {
-          pilares.map((pilar) => (
-            <div class="mx-auto max-w-[360px] text-center">
+          pilares.map((pilar, i) => (
+            <div
+              class="mx-auto max-w-[360px] text-center"
+              data-anim
+              data-anim-delay={i * 110}
+            >
               <p class="font-sans text-[20px] font-semibold leading-[30px] text-jk-gold">
                 {pilar.titulo}
               </p>
@@ -254,8 +295,13 @@ const categorias = [
   >
     <div class="grid gap-8 lg:grid-cols-3 lg:gap-[31px]">
       {
-        categorias.map((categoria) => (
-          <a href={`/catalogo/${categoria.slug}`} class="block">
+        categorias.map((categoria, i) => (
+          <a
+            href={`/catalogo/${categoria.slug}`}
+            class="jk-categoria block"
+            data-anim
+            data-anim-delay={i * 110}
+          >
             <figure class="relative">
               <div class="overflow-hidden rounded-[4px] border border-jk-gold opacity-74">
                 <img
@@ -266,7 +312,7 @@ const categorias = [
                 />
               </div>
               <figcaption class="absolute bottom-[29px] left-[22px]">
-                <span class="block h-px w-[48px] bg-jk-gold" />
+                <span class="jk-linea block h-px w-[48px] bg-jk-gold" />
                 <span class="mt-[6px] block font-sans text-[24px] font-normal text-white">
                   {categoria.nombre}
                 </span>
@@ -285,11 +331,16 @@ const categorias = [
     >
       <p
         class="font-sans text-[32px] font-normal tracking-[-0.96px] text-black lg:text-[48px]"
+        data-anim
       >
         Asesoria personalizada
       </p>
 
-      <div class="flex flex-col gap-4 sm:flex-row lg:items-center lg:gap-[35px]">
+      <div
+        class="flex flex-col gap-4 sm:flex-row lg:items-center lg:gap-[35px]"
+        data-anim
+        data-anim-delay="140"
+      >
         <a
           href={waHref("Hola, quiero contactarlos para una asesoría.")}
           target={whatsapp ? "_blank" : undefined}
@@ -311,3 +362,181 @@ const categorias = [
     </div>
   </section>
 </Layout>
+
+<style>
+  /* ==========================================================================
+     Animaciones de la home
+     - Solo se animan `opacity` y `transform`: no alteran el layout (CLS 0).
+     - El estado inicial de los reveals lo agrega el JS; sin JS (o si el script
+       falla) todo el contenido queda visible tal cual.
+     - Con `prefers-reduced-motion: reduce` no se anima nada.
+     ========================================================================== */
+
+  /* Entrada del hero: CSS puro porque está sobre el pliegue */
+  @keyframes jk-entra {
+    from {
+      opacity: 0;
+      transform: translateY(26px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes jk-zoom {
+    from {
+      transform: scale(1.06);
+    }
+
+    to {
+      transform: scale(1);
+    }
+  }
+
+  .jk-entra {
+    animation: jk-entra 900ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  .jk-entra-1 {
+    animation-delay: 90ms;
+  }
+
+  .jk-entra-2 {
+    animation-delay: 210ms;
+  }
+
+  .jk-zoom {
+    animation: jk-zoom 1800ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  /* Reveal al hacer scroll.
+     El estado oculto vive en `.jk-oculto`, clase que agrega el JS: si el
+     script no corre, los elementos quedan visibles por defecto. */
+  [data-anim].jk-oculto {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+
+  [data-anim].jk-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* La transición se habilita después de fijar el estado inicial para que no
+     haya un parpadeo al cargar la página. */
+  [data-anim].jk-listo {
+    transition:
+      opacity 700ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition-delay: var(--anim-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  /* Marco decorativo de los pilares: se "dibuja" al entrar en pantalla */
+  [data-anim-linea].jk-oculto {
+    opacity: 0;
+  }
+
+  [data-anim-linea="h"].jk-oculto {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  [data-anim-linea="v"].jk-oculto {
+    transform: scaleY(0);
+    transform-origin: center top;
+  }
+
+  [data-anim-linea].jk-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  [data-anim-linea].jk-listo {
+    transition:
+      transform 900ms cubic-bezier(0.22, 0.61, 0.36, 1) 250ms,
+      opacity 500ms ease 250ms;
+    transition-delay: var(--anim-delay, 0ms);
+  }
+
+  /* Micro-interacción de las tarjetas de categoría (solo con ratón) */
+  @media (hover: hover) {
+    .jk-categoria img {
+      transition: transform 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .jk-categoria:hover img {
+      transform: scale(1.05);
+    }
+
+    .jk-categoria .jk-linea {
+      transition: width 500ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .jk-categoria:hover .jk-linea {
+      width: 72px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .jk-entra,
+    .jk-zoom {
+      animation: none;
+    }
+
+    [data-anim],
+    [data-anim-linea],
+    [data-anim].jk-oculto,
+    [data-anim-linea].jk-oculto {
+      opacity: 1;
+      transform: none;
+    }
+
+    [data-anim].jk-listo,
+    [data-anim-linea].jk-listo {
+      transition: none;
+    }
+
+    .jk-categoria img,
+    .jk-categoria .jk-linea {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Reveal al hacer scroll con IntersectionObserver.
+  // - El estado inicial (oculto) lo agrega este script: sin JS todo se ve.
+  // - Con movimiento reducido no se anima nada.
+  const elementos = document.querySelectorAll<HTMLElement>("[data-anim], [data-anim-linea]");
+  const prefiereQuieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (elementos.length > 0 && "IntersectionObserver" in window && !prefiereQuieto) {
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+          const elemento = entrada.target as HTMLElement;
+          elemento.classList.remove("jk-oculto");
+          elemento.classList.add("jk-visible");
+          observador.unobserve(elemento);
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.1 }
+    );
+
+    elementos.forEach((elemento) => {
+      const retraso = elemento.dataset.animDelay;
+      if (retraso) elemento.style.setProperty("--anim-delay", `${retraso}ms`);
+
+      // Fija el estado inicial y recién ahí habilita la transición para evitar
+      // el destello de "visible → oculto" al cargar.
+      elemento.classList.add("jk-oculto");
+      void elemento.offsetWidth;
+      elemento.classList.add("jk-listo");
+      observador.observe(elemento);
+    });
+  }
+</script>
