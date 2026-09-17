@@ -27,11 +27,27 @@ const numerosDe = (p: Product) =>
     .match(/\d+(?:[.,]\d+)?/g)
     ?.map((n) => Number(n.replace(",", "."))) ?? [];
 
+/**
+ * Normaliza el texto de categorías para que el slug de la URL coincida con el
+ * dato guardado: minúsculas, sin acentos y guiones convertidos en espacios
+ * ("centros-de-tv" → "centros de tv", "Sofás" → "sofas").
+ */
+const normalizar = (texto: string) =>
+  texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const categoriaNormalizada = normalizar(categoria);
+
 const min = medidaMin ? Number(medidaMin) : null;
 const max = medidaMax ? Number(medidaMax) : null;
 
 const filtrados = productos.filter((p) => {
-  if (!p.category?.toUpperCase().includes(categoria.toUpperCase())) return false;
+  if (!normalizar(p.category ?? "").includes(categoriaNormalizada)) return false;
 
   if (busqueda) {
     const texto = `${p.name} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
