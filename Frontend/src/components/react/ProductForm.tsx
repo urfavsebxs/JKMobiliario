@@ -29,11 +29,14 @@ export default function ProductForm({ productId, product }: Props) {
 
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
+  const [modelFile, setModelFile] = useState<File | null>(null);
+  const [existingModel, setExistingModel] = useState<string | null>(product?.model3d || null);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [error, setError] = useState("");
 
   const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+  const MODELO_MAX_MB = 25;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -88,6 +91,64 @@ export default function ProductForm({ productId, product }: Props) {
 
   const removeNewImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
+  };
+
+  // ─── Modelo 3D ──────────────────────────────────────────────────────
+  const handleModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".glb")) {
+      setError("El modelo 3D debe estar en formato .glb (GLTF binario).");
+      e.target.value = "";
+      return;
+    }
+
+    const limite = MODELO_MAX_MB * 1024 * 1024;
+    if (file.size > limite) {
+      setError(
+        `El modelo no puede superar los ${MODELO_MAX_MB}MB (actual: ${(file.size / 1048576).toFixed(1)}MB).`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    setError("");
+    setModelFile(file);
+  };
+
+  const nombreArchivo = (url: string) => {
+    try {
+      return decodeURIComponent(url.split("/").pop() || "modelo.glb");
+    } catch {
+      return "modelo.glb";
+    }
+  };
+
+  const removeExistingModel = async () => {
+    const token = localStorage.getItem("token");
+    if (!token || !productId) return;
+
+    if (!window.confirm("¿Eliminar el modelo 3D de este producto?")) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/products/${productId}/model`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Error al eliminar el modelo 3D");
+        return;
+      }
+
+      setExistingModel(null);
+    } catch (err) {
+      console.error("Error deleting model:", err);
+      alert("Error al conectar con el servidor");
+    }
   };
 
   const removeExistingImage = async (imageUrl: string) => {
@@ -188,6 +249,27 @@ export default function ProductForm({ productId, product }: Props) {
         }
 
         setImages((prev) => prev.filter((img) => img !== file));
+      }
+
+      // El modelo 3D se sube al final, cuando el producto ya existe.
+      if (modelFile) {
+        setUploadStatus("Subiendo modelo 3D...");
+        const modelData = new FormData();
+        modelData.append("model", modelFile);
+
+        const modelRes = await fetch(`${API_URL}/api/products/${savedId}/model`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: modelData,
+        });
+
+        const modelJson = await modelRes.json();
+
+        if (!modelRes.ok) {
+          throw new Error(modelJson.message || "Error al subir el modelo 3D");
+        }
+
+        setModelFile(null);
       }
 
       window.location.href = "/admin";
@@ -492,6 +574,62 @@ export default function ProductForm({ productId, product }: Props) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modelo 3D */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-1">Modelo 3D</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Formato GLB, máximo {MODELO_MAX_MB}MB. Se muestra en la sección «Vista 3D» de la página del
+          producto y se escala según las <span className="font-medium">Dimensiones</span> del producto
+          (ancho × largo × alto).
+        </p>
+
+        <input
+          type="file"
+          accept=".glb,model/gltf-binary"
+          onChange={handleModelChange}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+        />
+
+        {modelFile && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-jk-gold bg-jk-cream px-4 py-3">
+            <span className="text-sm text-jk-gold-deep">
+              Nuevo modelo: <span className="font-medium">{modelFile.name}</span> (
+              {(modelFile.size / 1048576).toFixed(1)}MB)
+            </span>
+            <button
+              type="button"
+              onClick={() => setModelFile(null)}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Quitar
+            </button>
+          </div>
+        )}
+
+        {existingModel && !modelFile && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+            <span className="text-sm text-gray-700">
+              Modelo actual: <span className="font-medium">{nombreArchivo(existingModel)}</span>
+            </span>
+            <a
+              href={existingModel}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-900 underline hover:text-gray-700"
+            >
+              Ver archivo
+            </a>
+            <button
+              type="button"
+              onClick={removeExistingModel}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Eliminar
+            </button>
           </div>
         )}
       </div>
