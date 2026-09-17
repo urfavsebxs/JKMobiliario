@@ -66,7 +66,9 @@ const categorias = [
 >
   <!-- Hero -->
   <section class="relative">
-    <div class="absolute inset-x-0 top-0 h-[1000px] overflow-hidden">
+    <!-- En móvil la foto termina con el hero para no invadir la sección
+         siguiente (el texto del concepto quedaría sobre la imagen). -->
+    <div class="absolute inset-x-0 top-0 h-full overflow-hidden lg:h-[1000px]">
       <img
         src="/images/jk/hero.jpg"
         alt=""
@@ -166,7 +168,7 @@ const categorias = [
         <img
           src="/images/jk/d1.jpg"
           alt="Comedor en madera"
-          class="col-span-1 aspect-[381/426] w-full rounded-[3px] object-cover lg:absolute lg:left-[353px] lg:top-[74px] lg:h-[426px] lg:w-[381px]"
+          class="col-span-1 aspect-[342/325] w-full rounded-[3px] object-cover lg:absolute lg:left-[353px] lg:top-[74px] lg:h-[426px] lg:w-[381px]"
           loading="lazy"
         />
         <img
@@ -221,7 +223,8 @@ const categorias = [
     </div>
 
     <div class="mx-auto mt-12 max-w-[1353px] px-5 lg:mt-[82px] lg:px-0">
-      <div class="relative h-[70px]">
+      <!-- Marco decorativo de 3 columnas: sólo tiene sentido en escritorio -->
+      <div class="relative hidden h-[70px] lg:block">
         <div class="absolute inset-x-[16.667%] top-0 h-px bg-white/25"></div>
         <div class="absolute left-[16.667%] top-0 h-[70px] w-px bg-white/25"></div>
         <div class="absolute left-1/2 top-0 h-[70px] w-px bg-white/25"></div>
