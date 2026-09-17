@@ -124,6 +124,18 @@ export const updateProduct = async (id: string, data: UpdateProductDTO, files?: 
   return product;
 };
 
+export const addImage = async (id: string, file: Express.Multer.File): Promise<IProduct> => {
+  const product = await Product.findById(id);
+  if (!product) {
+    throw createAppError("Product not found", 404);
+  }
+
+  const url = await uploadImage(file, product._id.toString());
+  product.images.push(url);
+  await product.save();
+  return product;
+};
+
 export const deleteProduct = async (id: string): Promise<void> => {
   const product = await Product.findByIdAndDelete(id);
   if (!product) {

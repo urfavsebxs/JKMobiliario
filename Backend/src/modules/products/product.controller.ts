@@ -58,6 +58,19 @@ export const updateStock = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+export const addImage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: "No image provided" });
+      return;
+    }
+    const product = await productService.addImage(req.params.id, req.file);
+    res.status(200).json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * Remove image from product.
  * imageUrl is now passed as a query parameter (e.g., DELETE /:id/image?imageUrl=...).

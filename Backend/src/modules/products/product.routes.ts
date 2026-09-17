@@ -34,6 +34,12 @@ router.put(
   validateBody(updateProductSchema),
   productController.update
 );
+router.post(
+  "/:id/images",
+  validateParam("id", objectIdParamSchema),
+  upload.single("image"),
+  productController.addImage
+);
 router.delete(
   "/:id",
   validateParam("id", objectIdParamSchema),
