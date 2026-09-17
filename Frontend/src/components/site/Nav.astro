@@ -49,7 +49,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
 >
   <div
     class:list={[
-      "mx-auto flex max-w-[1440px] items-center gap-4 px-5 py-4 lg:gap-x-[50px] lg:py-0 lg:pl-[92px] lg:pr-[52px]",
+      "mx-auto flex max-w-[1440px] items-center gap-4 px-5 py-4 lg:gap-x-[32px] lg:py-0 lg:pl-[92px] lg:pr-[52px] xl:gap-x-[50px]",
       overlay ? "lg:h-[126px]" : "lg:h-[150px]",
     ]}
   >
@@ -112,6 +112,34 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       }
     </nav>
 
+    <!-- Acceso al panel: en escritorio es un botón fantasma junto al CTA.
+         El script lo convierte en "Panel"/"Mi cuenta" si hay sesión activa. -->
+    <a
+      href="/login"
+      data-jk-login
+      aria-label="Iniciar sesión"
+      class:list={[
+        "jk-nav-ink hidden items-center gap-2 rounded-lg border border-current/40 px-4 font-sans text-[15px] font-medium transition-opacity hover:opacity-70 lg:inline-flex lg:h-[44px]",
+        linkColor,
+      ]}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="h-[18px] w-[18px] shrink-0"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="8" r="3.5"></circle>
+        <path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"></path>
+      </svg>
+      <span data-jk-login-label class="hidden xl:inline">Iniciar sesión</span>
+    </a>
+
     <a
       href={contactHref}
       target={contactTarget}
@@ -142,10 +170,14 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
         </span>
       </summary>
 
-      <div
-        id="menu-movil"
-        class="jk-mobile-panel absolute inset-x-0 top-full border-t border-white/10 bg-black/90 backdrop-blur-md"
-      >
+      <!-- Misma banda oscura que el desplegable de escritorio: cubre toda la
+           cabecera desde el borde superior y queda por detrás del contenido. -->
+      <span
+        class="jk-mobile-backdrop absolute inset-0 -z-10 bg-black/80"
+        aria-hidden="true"
+      ></span>
+
+      <div id="menu-movil" class="jk-mobile-panel absolute inset-x-0 top-full -z-10 bg-black/80">
         <nav aria-label="Navegación móvil" class="mx-auto max-w-[1440px] px-5 pt-1 pb-6">
           <ul class="flex flex-col">
             {
@@ -172,6 +204,29 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
             class="jk-pill-gradient mt-6 flex h-[51px] items-center justify-center rounded-lg font-label text-[16px] font-medium text-jk-ink transition-opacity hover:opacity-90"
           >
             CONTÁCTANOS
+          </a>
+
+          <a
+            href="/login"
+            data-jk-login
+            aria-label="Iniciar sesión"
+            class="mt-3 flex h-[51px] items-center justify-center gap-2 rounded-lg border border-jk-gold/70 font-label text-[16px] font-medium text-jk-gold transition-colors hover:bg-white/5"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-[18px] w-[18px] shrink-0"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="8" r="3.5"></circle>
+              <path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"></path>
+            </svg>
+            <span data-jk-login-label>Iniciar sesión</span>
           </a>
         </nav>
       </div>
@@ -273,6 +328,23 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     overscroll-behavior: contain;
   }
 
+  /* La banda que cubre la barra superior aparece con un fundido suave */
+  .jk-mobile-backdrop {
+    animation: jk-menu-fade 200ms ease-out;
+  }
+
+  /* Con el menú abierto la banda oscura pasa por detrás de toda la cabecera.
+     Sobre el fondo claro del modo "solid" el texto negro quedaría ilegible,
+     así que palabra marca y botón pasan a blanco. */
+  .jk-header:has([data-jk-menu][open]) .jk-nav-ink,
+  .jk-header:has([data-jk-menu][open]) .jk-burger {
+    color: #fff;
+  }
+
+  .jk-header:has([data-jk-menu][open]) .jk-burger:hover {
+    background-color: rgb(255 255 255 / 0.1);
+  }
+
   @keyframes jk-menu-in {
     from {
       opacity: 0;
@@ -285,18 +357,56 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     }
   }
 
+  @keyframes jk-menu-fade {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .jk-burger-line {
       transition: none;
     }
 
-    .jk-mobile-panel {
+    .jk-mobile-panel,
+    .jk-mobile-backdrop {
       animation: none;
     }
   }
 </style>
 
 <script>
+  // --- Acceso al panel ---
+  // Si hay sesión activa, los enlaces de login apuntan al panel y cambian su
+  // texto. Sin sesión (o con localStorage bloqueado) se quedan como están.
+  const accesos = document.querySelectorAll<HTMLAnchorElement>("[data-jk-login]");
+
+  if (accesos.length > 0) {
+    try {
+      const token = localStorage.getItem("token");
+      const usuario = JSON.parse(localStorage.getItem("user") || "null");
+
+      if (token && usuario) {
+        const esAdmin = usuario.role === "admin";
+        const destino = esAdmin ? "/admin" : "/";
+        const etiqueta = esAdmin ? "Panel" : "Mi cuenta";
+
+        accesos.forEach((acceso) => {
+          acceso.href = destino;
+          acceso.setAttribute("aria-label", etiqueta);
+          acceso.querySelector("[data-jk-login-label]")?.replaceChildren(etiqueta);
+        });
+      }
+    } catch {
+      // localStorage bloqueado o JSON corrupto: el botón sigue llevando a /login.
+    }
+  }
+
+  // --- Menú móvil ---
   const menu = document.querySelector<HTMLDetailsElement>("[data-jk-menu]");
   const summary = menu?.querySelector<HTMLElement>("summary");
 
