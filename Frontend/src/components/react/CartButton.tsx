@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { cartItems, getCartCount, getCartTotal, removeFromCart, updateQuantity } from "../../lib/cart";
 import { proxyImageUrl } from "../../lib/images";
+import { formatPrice } from "../../lib/precio";
 
 export default function CartButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,13 +14,6 @@ export default function CartButton() {
     setCount(getCartCount());
     setTotal(getCartTotal());
   }, [items]);
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("es-PE", {
-      style: "currency",
-      currency: "PEN",
-    }).format(price);
-  };
 
   return (
     <>

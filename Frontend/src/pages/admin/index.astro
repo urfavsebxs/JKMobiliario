@@ -4,6 +4,7 @@ export const prerender = false;
 import Layout from "../../layouts/Layout.astro";
 import { getProducts } from "../../lib/api";
 import { proxyImageUrl } from "../../lib/images";
+import { formatPrice } from "../../lib/precio";
 
 let products = [];
 let total = 0;
@@ -21,13 +22,6 @@ try {
 } catch (e) {
   error = e instanceof Error ? e.message : "Error al cargar productos";
 }
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("es-PE", {
-    style: "currency",
-    currency: "PEN",
-  }).format(price);
-};
 ---
 
 <Layout title="Administración" bodyClass="bg-jk-surface text-jk-ink">

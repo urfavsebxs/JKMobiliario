@@ -3,6 +3,7 @@ import { useStore } from "@nanostores/react";
 import type { Product, ProductVariant } from "../../lib/types";
 import { colorMueble, setColorMueble } from "../../lib/colorMueble";
 import { fijarMedidas, medidasMueble } from "../../lib/medidasMueble";
+import { formatPrice, precioTexto } from "../../lib/precio";
 
 interface ProductOptionsProps {
   product: Product;
@@ -81,14 +82,6 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
     if (medidas) setIsCustomSize(true);
   }, [medidas]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
   const currentVariant = hasVariants
     ? product.variants.find(
         (v) => v.size === selectedSize && v.color === selectedColor
@@ -145,7 +138,7 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
       messageLines.push(`🎨 *Color:* ${colorTexto}`);
     }
 
-    messageLines.push(`💰 *Precio base:* ${formatPrice(displayPrice)}`);
+    messageLines.push(`💰 *Precio base:* ${precioTexto(displayPrice)}`);
 
     if (additionalNotes.trim()) {
       messageLines.push(``, `📝 *Notas adicionales:* ${additionalNotes.trim()}`);
@@ -189,7 +182,7 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
       {/* Precio */}
       <div className="flex items-baseline gap-3">
         <span className="text-3xl font-bold text-gray-900">
-          {formatPrice(displayPrice)}
+          {precioTexto(displayPrice)}
         </span>
         {currentVariant?.price && currentVariant.price < product.price && (
           <span className="text-lg text-gray-400 line-through">

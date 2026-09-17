@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { proxyImageUrl } from "../../lib/images";
+import { formatPrice } from "../../lib/precio";
 
 interface Props {
   productId?: string;
@@ -263,7 +264,9 @@ export default function ProductForm({ productId, product }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Precio Base</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Precio Base (COP)
+          </label>
           <input
             type="number"
             name="price"
@@ -271,7 +274,7 @@ export default function ProductForm({ productId, product }: Props) {
             onChange={handleInputChange}
             required
             min="0"
-            step="0.01"
+            step="1"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
         </div>
@@ -396,7 +399,7 @@ export default function ProductForm({ productId, product }: Props) {
             onChange={(e) => setNewVariant({ ...newVariant, price: Number(e.target.value) })}
             placeholder="Precio (opcional)"
             min="0"
-            step="0.01"
+            step="1"
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
           <button
@@ -429,7 +432,7 @@ export default function ProductForm({ productId, product }: Props) {
                     </span>
                   </td>
                   <td className="py-2">{v.stock}</td>
-                  <td className="py-2">{v.price > 0 ? `$${v.price}` : "-"}</td>
+                  <td className="py-2">{v.price > 0 ? formatPrice(v.price) : "-"}</td>
                   <td className="py-2 text-right">
                     <button type="button" onClick={() => removeVariant(i)} className="text-red-500 hover:text-red-700">Eliminar</button>
                   </td>
