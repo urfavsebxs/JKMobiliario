@@ -2,6 +2,12 @@
 const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 const waHref = whatsapp ? `https://wa.me/${whatsapp}` : "/#contacto";
 
+// Dirección del local (JK Mobiliario S.A.S, Medellín) para abrir en mapas.
+const direccion =
+  "Carrera 52 #7 Sur -22, Mall Providencia, Avenida Guayabal, Medellín, Antioquia, Colombia";
+const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+const wazeHref = `https://waze.com/ul?q=${encodeURIComponent(direccion)}&navigate=yes`;
+
 const navLinks = [
   { label: "Inicio", href: "/" },
   { label: "Catálogo", href: "/catalogo" },
@@ -112,21 +118,118 @@ const linkClass =
         </div>
 
         <div class="lg:py-[66px]">
-          <div class="flex gap-[7px] lg:min-h-[127px] lg:border-l lg:border-white/25 lg:pl-[10px]">
-            <img
-              src="/images/jk/icon-ubi.png"
-              alt=""
-              width="33"
-              height="50"
-              class="h-[50px] w-[33px] shrink-0 object-contain"
-              loading="lazy"
-            />
-            <address class="font-sans text-[15px] font-semibold not-italic leading-[normal] text-white">
-              Carrera 52 #7 Sur -22<br />Mall providencia<br />Avenida Guayabal<br />Medellín
-            </address>
-          </div>
+          <details class="jk-ubi lg:min-h-[127px] lg:border-l lg:border-white/25 lg:pl-[10px]">
+            <summary
+              class="flex cursor-pointer items-start gap-[7px] rounded-md"
+              aria-label="Ver la dirección en Google Maps o Waze"
+            >
+              <img
+                src="/images/jk/icon-ubi.png"
+                alt=""
+                width="33"
+                height="50"
+                class="h-[50px] w-[33px] shrink-0 object-contain"
+                loading="lazy"
+              />
+              <address
+                class="font-sans text-[15px] font-semibold not-italic leading-[normal] text-white"
+              >
+                Carrera 52 #7 Sur -22<br />Mall providencia<br />Avenida Guayabal<br />Medellín
+                <span
+                  class="mt-[6px] flex items-center gap-1 font-sans text-[12px] font-semibold text-jk-gold"
+                >
+                  Ver en mapas
+                  <svg
+                    class="jk-ubi-chevron transition-transform duration-200"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="12"
+                    height="12"
+                    aria-hidden="true"
+                  >
+                    <path d="m6 9 6 6 6-6"></path>
+                  </svg>
+                </span>
+              </address>
+            </summary>
+
+            <ul class="mt-3 flex flex-col gap-2 border-l border-white/25 pl-[42px]">
+              <li>
+                <a
+                  href={mapsHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-2 font-sans text-[14px] font-semibold text-white transition-colors hover:text-jk-gold"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="16"
+                    height="16"
+                    class="shrink-0 text-jk-gold"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 21s-7-4.6-7-11a7 7 0 1 1 14 0c0 6.4-7 11-7 11Z"></path>
+                    <circle cx="12" cy="10" r="2.5"></circle>
+                  </svg>
+                  Google Maps
+                </a>
+              </li>
+              <li>
+                <a
+                  href={wazeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-2 font-sans text-[14px] font-semibold text-white transition-colors hover:text-jk-gold"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="16"
+                    height="16"
+                    class="shrink-0 text-jk-gold"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 21s-7-4.6-7-11a7 7 0 1 1 14 0c0 6.4-7 11-7 11Z"></path>
+                    <path d="m9.5 10 2 2 3.5-4"></path>
+                  </svg>
+                  Waze
+                </a>
+              </li>
+            </ul>
+          </details>
         </div>
       </div>
     </div>
   </div>
 </footer>
+
+<style>
+  .jk-ubi summary {
+    list-style: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .jk-ubi summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .jk-ubi[open] .jk-ubi-chevron {
+    transform: rotate(180deg);
+  }
+</style>
