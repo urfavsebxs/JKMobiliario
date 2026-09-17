@@ -29,6 +29,7 @@ export default function ProductForm({ productId, product }: Props) {
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
   const [loading, setLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [error, setError] = useState("");
 
   const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
@@ -128,21 +129,20 @@ export default function ProductForm({ productId, product }: Props) {
       return;
     }
 
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("dimensions", formData.dimensions);
-      formDataToSend.append("price", String(formData.price));
-      formDataToSend.append("stock", String(formData.stock));
-      formDataToSend.append("category", formData.category);
-      formDataToSend.append("sizes", JSON.stringify(sizes));
-      formDataToSend.append("colors", JSON.stringify(colors));
-      formDataToSend.append("variants", JSON.stringify(variants));
+    let savedId = productId;
 
-      images.forEach((img) => {
-        formDataToSend.append("images", img);
-      });
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        dimensions: formData.dimensions.trim(),
+        price: formData.price,
+        stock: formData.stock,
+        category: formData.category.trim(),
+        sizes,
+        colors,
+        variants,
+      };
 
       const url = productId
         ? `${API_URL}/api/products/${productId}`
@@ -150,21 +150,57 @@ export default function ProductForm({ productId, product }: Props) {
 
       const res = await fetch(url, {
         method: productId ? "PUT" : "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formDataToSend,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Error al guardar producto");
+        throw new Error(data.errors?.[0]?.message || data.message || "Error al guardar producto");
+      }
+
+      savedId = productId || data.data?._id;
+      if (!savedId) {
+        throw new Error("No se pudo obtener el ID del producto");
+      }
+
+      for (let i = 0; i < images.length; i++) {
+        setUploadStatus(`Subiendo imagen ${i + 1} de ${images.length}...`);
+        const file = images[i];
+        const imageData = new FormData();
+        imageData.append("image", file);
+
+        const imageRes = await fetch(`${API_URL}/api/products/${savedId}/images`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: imageData,
+        });
+
+        const imageJson = await imageRes.json();
+
+        if (!imageRes.ok) {
+          throw new Error(imageJson.message || `Error al subir la imagen ${i + 1}`);
+        }
+
+        setImages((prev) => prev.filter((img) => img !== file));
       }
 
       window.location.href = "/admin";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar producto");
+      const message = err instanceof Error ? err.message : "Error al guardar producto";
+      if (!productId && savedId) {
+        alert(`${message}. El producto fue creado, se abrirá el formulario para reintentar la subida.`);
+        window.location.href = `/admin/products/${savedId}`;
+        return;
+      }
+      setError(message);
     } finally {
       setLoading(false);
+      setUploadStatus("");
     }
   };
 
@@ -414,7 +450,7 @@ export default function ProductForm({ productId, product }: Props) {
           onChange={handleImageChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg"
         />
-        <p className="text-xs text-gray-500 mt-1">JPEG, PNG o WebP. Máximo 5MB por imagen.</p>
+        <p className="text-xs text-gray-500 mt-1">JPEG, PNG o WebP. Máximo 4MB por imagen.</p>
 
         {existingImages.length > 0 && (
           <div className="mt-4">
@@ -463,7 +499,7 @@ export default function ProductForm({ productId, product }: Props) {
           disabled={loading}
           className="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400"
         >
-          {loading ? "Guardando..." : productId ? "Guardar Cambios" : "Crear Producto"}
+          {loading ? uploadStatus || "Guardando..." : productId ? "Guardar Cambios" : "Crear Producto"}
         </button>
         <a
           href="/admin"
