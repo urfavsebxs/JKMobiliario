@@ -1,5 +1,11 @@
 import { Product, IProduct, IProductVariant, IProductColor } from "../../models/Product";
-import { minioClient, config, ensureBucket } from "../../config/minio";
+import {
+  minioClient,
+  config,
+  ensureBucket,
+  publicObjectUrl,
+  objectKeyFromUrl,
+} from "../../config/minio";
 import { AppError } from "../../middlewares/errorHandler";
 
 interface CreateProductDTO {
@@ -24,8 +30,7 @@ const uploadImage = async (file: Express.Multer.File, productId: string): Promis
     "Content-Type": file.mimetype,
   });
 
-  const protocol = config.minio.useSSL ? "https" : "http";
-  return `${protocol}://${config.minio.endPoint}:${config.minio.port}/${config.minioBucket}/${fileName}`;
+  return publicObjectUrl(fileName);
 };
 
 const deleteProductImages = async (productId: string): Promise<void> => {
@@ -183,14 +188,78 @@ export const removeImage = async (id: string, imageUrl: string): Promise<IProduc
     throw createAppError("Image not found in product", 404);
   }
 
-  // Extract object key from URL
-  const urlParts = imageUrl.split(`/${config.minioBucket}/`);
-  if (urlParts.length === 2) {
-    const objectKey = urlParts[1];
+  // Extrae el object key tanto de la URL directa como de la URL pública HTTPS.
+  const objectKey = objectKeyFromUrl(imageUrl);
+  if (objectKey) {
     await minioClient.removeObject(config.minioBucket, objectKey);
   }
 
   product.images.splice(imageIndex, 1);
+  await product.save();
+  return product;
+};
+
+/**
+ * Sube (o reemplaza) el modelo 3D .glb del producto.
+ * El objeto anterior se borra después de subir el nuevo para no dejar huérfanos.
+ */
+export const uploadModel = async (id: string, file: Express.Multer.File): Promise<IProduct> => {
+  const product = await Product.findById(id);
+  if (!product) {
+    throw createAppError("Product not found", 404);
+  }
+
+  const fileName = `products/${product._id.toString()}/model/${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(7)}.glb`;
+
+  await minioClient.putObject(config.minioBucket, fileName, file.buffer, file.size, {
+    "Content-Type": "model/gltf-binary",
+  });
+
+  // Reemplazo: borrar el modelo anterior (mejor esfuerzo; un fallo aquí no
+  // invalida la subida y queda registrado en el log).
+  const anterior = product.model3d ? objectKeyFromUrl(product.model3d) : null;
+  if (anterior && anterior !== fileName) {
+    try {
+      await minioClient.removeObject(config.minioBucket, anterior);
+    } catch (error) {
+      console.error(
+        `[minio] No se pudo borrar el modelo anterior (${anterior}):`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
+  product.model3d = publicObjectUrl(fileName);
+  await product.save();
+  return product;
+};
+
+/**
+ * Elimina el modelo 3D del producto y su objeto en MinIO.
+ * Es idempotente: si el objeto ya no existe, MinIO no falla y el producto
+ * queda sin `model3d`.
+ */
+export const deleteModel = async (id: string): Promise<IProduct> => {
+  const product = await Product.findById(id);
+  if (!product) {
+    throw createAppError("Product not found", 404);
+  }
+
+  const objectKey = product.model3d ? objectKeyFromUrl(product.model3d) : null;
+  if (objectKey) {
+    try {
+      await minioClient.removeObject(config.minioBucket, objectKey);
+    } catch (error) {
+      console.error(
+        `[minio] No se pudo borrar el modelo (${objectKey}):`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
+  product.model3d = undefined;
   await product.save();
   return product;
 };

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as productController from "./product.controller";
-import { upload } from "../../middlewares/upload";
+import { upload, uploadModel } from "../../middlewares/upload";
 import { validateBody, validateParam, validateQuery } from "../../middlewares/validate";
 import {
   createProductSchema,
@@ -62,6 +62,33 @@ router.delete(
   validateParam("id", objectIdParamSchema),
   validateQuery(removeImageQuerySchema),
   productController.removeImage
+);
+
+/**
+ * POST /:id/model
+ * Sube (o reemplaza) el modelo 3D del producto.
+ * - multipart/form-data con el campo "model"
+ * - Solo .glb (model/gltf-binary), máximo 25MB
+ * - Admin (ver config/routes.ts)
+ * - Respuesta: 200 { success: true, data: <product> } con `model3d` actualizado
+ */
+router.post(
+  "/:id/model",
+  validateParam("id", objectIdParamSchema),
+  uploadModel.single("model"),
+  productController.uploadModel
+);
+
+/**
+ * DELETE /:id/model
+ * Elimina el modelo 3D del producto y su objeto en MinIO (idempotente).
+ * - Admin (ver config/routes.ts)
+ * - Respuesta: 200 { success: true, data: <product> } sin `model3d`
+ */
+router.delete(
+  "/:id/model",
+  validateParam("id", objectIdParamSchema),
+  productController.removeModel
 );
 
 export default router;

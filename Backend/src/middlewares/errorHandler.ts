@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { MulterError } from "multer";
+import { MODEL_MAX_MB } from "./upload";
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -14,7 +15,13 @@ export interface AppError extends Error {
  */
 export const errorHandler = (err: AppError, _req: Request, res: Response, _next: NextFunction): void => {
   if (err instanceof MulterError) {
-    const message = err.code === "LIMIT_FILE_SIZE" ? "Image exceeds the 4MB limit" : err.message;
+    // El campo "model" corresponde al modelo 3D (25MB); el resto son imágenes.
+    const message =
+      err.code === "LIMIT_FILE_SIZE" && err.field === "model"
+        ? `El modelo 3D supera el límite de ${MODEL_MAX_MB}MB`
+        : err.code === "LIMIT_FILE_SIZE"
+          ? "Image exceeds the 4MB limit"
+          : err.message;
     res.status(400).json({ success: false, message });
     return;
   }

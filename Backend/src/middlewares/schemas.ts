@@ -67,6 +67,8 @@ export const createProductSchema = z.object({
   sizes: jsonArrayOrRaw(z.string()).optional(),
   colors: jsonArrayOrRaw(productColorSchema).optional(),
   variants: jsonArrayOrRaw(productVariantSchema).optional(),
+  // El flujo normal usa POST/DELETE /:id/model; se acepta aquí por completitud.
+  model3d: z.string().url("model3d must be a valid URL").max(2048).optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial().refine(

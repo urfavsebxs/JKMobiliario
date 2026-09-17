@@ -35,3 +35,34 @@ export const ensureBucket = async (): Promise<void> => {
   await minioClient.setBucketPolicy(config.minioBucket, policy);
   console.log(`Bucket "${config.minioBucket}" policy set to public read`);
 };
+
+/**
+ * URL pública de un objeto del bucket.
+ *
+ * Si `MINIO_PUBLIC_URL` está definida (p. ej. https://api.jkmobiliario.digital/media,
+ * proxy HTTPS de Caddy hacia MinIO), las URLs nuevas se construyen por HTTPS y
+ * el navegador puede descargarlas desde el sitio sin *mixed content* ni CORS.
+ * Si no, se conserva el formato histórico http(s)://endpoint:puerto/bucket/key
+ * (las URLs viejas siguen funcionando con el proxy de imágenes de Astro).
+ */
+export const publicObjectUrl = (objectName: string): string => {
+  if (config.minioPublicUrl) {
+    return `${config.minioPublicUrl}/${config.minioBucket}/${objectName}`;
+  }
+
+  const protocol = config.minio.useSSL ? "https" : "http";
+  return `${protocol}://${config.minio.endPoint}:${config.minio.port}/${config.minioBucket}/${objectName}`;
+};
+
+/**
+ * Extrae el object key de una URL pública (soporta tanto el formato HTTPS
+ * proxied como el formato histórico). Devuelve null si no pertenece al bucket.
+ */
+export const objectKeyFromUrl = (url: string): string | null => {
+  const marker = `/${config.minioBucket}/`;
+  const index = url.indexOf(marker);
+  if (index === -1) return null;
+
+  const key = url.slice(index + marker.length).split("?")[0]?.trim();
+  return key ? decodeURIComponent(key) : null;
+};

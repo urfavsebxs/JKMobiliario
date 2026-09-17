@@ -25,6 +25,8 @@ export interface IProduct extends Document {
   sizes: string[];
   colors: IProductColor[];
   variants: IProductVariant[];
+  /** URL pública del modelo 3D (.glb) del producto, si tiene uno. */
+  model3d?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +63,7 @@ const productSchema = new Schema<IProduct>(
     sizes: { type: [String], default: [] },
     colors: { type: [productColorSchema], default: [] },
     variants: { type: [productVariantSchema], default: [] },
+    model3d: { type: String },
   },
   { timestamps: true }
 );

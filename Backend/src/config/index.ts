@@ -25,4 +25,8 @@ export const config = {
     secretKey: requireEnv("MINIO_SECRET_KEY"),
   },
   minioBucket: requireEnv("MINIO_BUCKET"),
+  // URL pública HTTPS de MinIO (p. ej. https://api.dominio.com/media, proxied
+  // por Caddy). Opcional: si no se define, se conserva la URL directa
+  // http(s)://MINIO_ENDPOINT:MINIO_PORT (comportamiento anterior).
+  minioPublicUrl: process.env.MINIO_PUBLIC_URL?.trim().replace(/\/+$/, "") || "",
 };
