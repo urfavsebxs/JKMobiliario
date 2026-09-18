@@ -15,9 +15,10 @@ export const loginSchema = z.object({
 });
 
 // ─── Products ────────────────────────────────────────────────────────
-// NOTE: When using multer (multipart/form-data), all body fields arrive
-// as strings. We use z.coerce for numbers and accept both JSON strings
-// and arrays for complex fields.
+// NOTE: En POST/PUT de producto (multer, multipart/form-data) todos los campos
+// del body llegan como strings. Por eso se usa z.coerce para números y se
+// aceptan tanto strings JSON como arrays para campos complejos. Los PATCH
+// (stock, discount, medidas) reciben JSON vía express.json(), no multipart.
 
 const hexRegex = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 
@@ -28,8 +29,9 @@ const productColorSchema = z.object({
 
 const productVariantSchema = z.object({
   size: z.string().min(1).max(100),
-  color: z.string().min(1).max(100),
-  colorHex: z.string().regex(hexRegex, "Invalid hex color"),
+  // Opcionales: camas y comedores varían por tamaño/asientos, no por color.
+  color: z.string().min(1).max(100).optional(),
+  colorHex: z.string().regex(hexRegex, "Invalid hex color").optional(),
   stock: z.coerce.number().int().min(0),
   price: z.coerce.number().min(0).optional(),
   sku: z.string().max(50).optional(),
@@ -37,7 +39,7 @@ const productVariantSchema = z.object({
 
 /**
  * Accepts an array of items, or a JSON string that parses to an array.
- * This handles both JSON body and multipart form-data.
+ * The string form covers product POST/PUT (multipart/form-data via multer).
  */
 const jsonArrayOrRaw = <T extends z.ZodType>(itemSchema: T) =>
   z.union([
@@ -57,6 +59,52 @@ const jsonArrayOrRaw = <T extends z.ZodType>(itemSchema: T) =>
     }),
   ]);
 
+/**
+ * Accepts an object, or a JSON string that parses to an object.
+ * The string form covers product POST/PUT (multipart/form-data via multer).
+ */
+const jsonObjectOrRaw = <T extends z.ZodType>(objectSchema: T) =>
+  z.union([
+    objectSchema,
+    z
+      .string()
+      .transform((str, ctx) => {
+        try {
+          const parsed = JSON.parse(str);
+          if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+            ctx.addIssue({ code: "custom", message: "Expected a JSON object" });
+            return z.NEVER;
+          }
+          return parsed;
+        } catch {
+          ctx.addIssue({ code: "custom", message: "Invalid JSON object" });
+          return z.NEVER;
+        }
+      })
+      // El objeto parseado se valida/coerciona con el esquema real.
+      .pipe(objectSchema),
+  ]);
+
+// ─── Producto: medidas base ──────────────────────────────────────────
+
+/**
+ * Medidas reales del modelo GLB en centímetros (ejes opcionales).
+ * En POST/PUT de producto (multer) puede llegar como string JSON; en
+ * PATCH /:id/medidas llega como objeto plano vía express.json().
+ * El mínimo (0.1) debe coincidir con Product.medidasBase para que la
+ * validación falle en 400 y no en un ValidationError de Mongoose (500).
+ */
+export const medidasBaseSchema = jsonObjectOrRaw(
+  z.object({
+    ancho: z.coerce.number().min(0.1, "La medida mínima es 0.1 cm").max(100000).optional(),
+    largo: z.coerce.number().min(0.1, "La medida mínima es 0.1 cm").max(100000).optional(),
+    alto: z.coerce.number().min(0.1, "La medida mínima es 0.1 cm").max(100000).optional(),
+  })
+);
+
+/** Descuento activo en porcentaje (0 = sin descuento). */
+export const discountPercentSchema = z.coerce.number().int().min(0).max(100);
+
 export const createProductSchema = z.object({
   name: z.string().min(1, "Name is required").max(300),
   description: z.string().min(1, "Description is required").max(2000),
@@ -69,6 +117,10 @@ export const createProductSchema = z.object({
   variants: jsonArrayOrRaw(productVariantSchema).optional(),
   // El flujo normal usa POST/DELETE /:id/model; se acepta aquí por completitud.
   model3d: z.string().url("model3d must be a valid URL").max(2048).optional(),
+  // Medidas reales del modelo GLB en centímetros (referencia de escalado).
+  medidasBase: medidasBaseSchema.optional(),
+  // Descuento activo en porcentaje (0 = sin descuento).
+  discountPercent: discountPercentSchema.optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial().refine(
@@ -80,6 +132,16 @@ export const updateStockSchema = z.object({
   quantity: z.coerce
     .number({ message: "quantity must be a number" })
     .int({ message: "quantity must be an integer" }),
+});
+
+/** PATCH /:id/discount — descuento activo en porcentaje (0 = sin descuento). */
+export const updateDiscountSchema = z.object({
+  discountPercent: discountPercentSchema,
+});
+
+/** PATCH /:id/medidas — medidas reales del modelo GLB en centímetros. */
+export const updateMedidasSchema = z.object({
+  medidasBase: medidasBaseSchema,
 });
 
 export const objectIdParamSchema = z.object({

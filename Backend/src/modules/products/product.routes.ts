@@ -6,6 +6,8 @@ import {
   createProductSchema,
   updateProductSchema,
   updateStockSchema,
+  updateDiscountSchema,
+  updateMedidasSchema,
   objectIdParamSchema,
   removeImageQuerySchema,
 } from "../../middlewares/schemas";
@@ -50,6 +52,34 @@ router.patch(
   validateParam("id", objectIdParamSchema),
   validateBody(updateStockSchema),
   productController.updateStock
+);
+
+/**
+ * PATCH /:id/discount
+ * Actualiza el descuento activo del producto (0-100).
+ * - Admin (ver config/routes.ts)
+ * - Respuesta: 200 { success: true, data: <product> }
+ */
+router.patch(
+  "/:id/discount",
+  validateParam("id", objectIdParamSchema),
+  validateBody(updateDiscountSchema),
+  productController.updateDiscount
+);
+
+/**
+ * PATCH /:id/medidas
+ * Actualiza las medidas base (cm) del modelo GLB del producto.
+ * Recibe JSON (express.json()): { medidasBase: { ancho?, largo?, alto? } }.
+ * El string JSON aceptado por el schema solo aplica a POST/PUT (multer).
+ * - Admin (ver config/routes.ts)
+ * - Respuesta: 200 { success: true, data: <product> }
+ */
+router.patch(
+  "/:id/medidas",
+  validateParam("id", objectIdParamSchema),
+  validateBody(updateMedidasSchema),
+  productController.updateMedidas
 );
 
 /**

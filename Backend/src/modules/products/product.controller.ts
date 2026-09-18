@@ -114,3 +114,31 @@ export const removeModel = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
+/**
+ * Update a product's active discount percentage.
+ * Responds 200 { success: true, data: <product> }.
+ */
+export const updateDiscount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { discountPercent } = req.body;
+    const product = await productService.setDiscount(req.params.id, discountPercent);
+    res.status(200).json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update a product's base measurements (cm) for its GLB model.
+ * Responds 200 { success: true, data: <product> }.
+ */
+export const updateMedidas = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { medidasBase } = req.body;
+    const product = await productService.setMedidasBase(req.params.id, medidasBase);
+    res.status(200).json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+};

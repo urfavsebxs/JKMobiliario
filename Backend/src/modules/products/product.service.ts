@@ -1,4 +1,10 @@
-import { Product, IProduct, IProductVariant, IProductColor } from "../../models/Product";
+import {
+  Product,
+  IProduct,
+  IProductVariant,
+  IProductColor,
+  IProductMedidasBase,
+} from "../../models/Product";
 import {
   minioClient,
   config,
@@ -18,6 +24,10 @@ interface CreateProductDTO {
   sizes?: string[];
   colors?: IProductColor[];
   variants?: IProductVariant[];
+  /** Medidas reales del modelo GLB en centímetros; referencia de escalado. */
+  medidasBase?: IProductMedidasBase;
+  /** Descuento activo en porcentaje (0 = sin descuento). */
+  discountPercent?: number;
 }
 
 interface UpdateProductDTO extends Partial<CreateProductDTO> {}
@@ -260,6 +270,60 @@ export const deleteModel = async (id: string): Promise<IProduct> => {
   }
 
   product.model3d = undefined;
+  await product.save();
+  return product;
+};
+
+/**
+ * Actualiza el descuento activo del producto (porcentaje 0-100).
+ * El valor ya llega validado y coercido por Zod en el middleware.
+ */
+export const setDiscount = async (productId: string, discountPercent: number): Promise<IProduct> => {
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw createAppError("Product not found", 404);
+  }
+
+  product.discountPercent = discountPercent;
+  await product.save();
+  return product;
+};
+
+/**
+ * Actualiza las medidas base (cm) del modelo GLB.
+ *
+ * Semántica de FUSIÓN (PATCH):
+ * - Si no se envía ningún eje (todos vacíos/undefined), limpia `medidasBase`.
+ * - Si llega al menos un eje, se fusiona con las medidas previas del producto
+ *   conservando los ejes no enviados.
+ */
+export const setMedidasBase = async (
+  productId: string,
+  medidasBase: IProductMedidasBase,
+): Promise<IProduct> => {
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw createAppError("Product not found", 404);
+  }
+
+  const ejes = ["ancho", "largo", "alto"] as const;
+  const presentes = ejes.filter((eje) => medidasBase[eje] !== undefined);
+
+  if (presentes.length === 0) {
+    product.set("medidasBase", undefined);
+  } else {
+    // `medidasBase` es un subdocumento de Mongoose (no un objeto plano):
+    // se leen los ejes previos uno a uno y se fusionan con los enviados
+    // para no perder los que no vinieron en el PATCH.
+    const previas = product.medidasBase;
+    const fusionadas: IProductMedidasBase = {};
+    for (const eje of ejes) {
+      const valor = medidasBase[eje] ?? previas?.[eje];
+      if (valor !== undefined) fusionadas[eje] = valor;
+    }
+    product.set("medidasBase", fusionadas);
+  }
+
   await product.save();
   return product;
 };

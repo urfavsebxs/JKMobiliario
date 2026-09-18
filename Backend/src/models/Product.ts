@@ -2,8 +2,9 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IProductVariant {
   size: string;
-  color: string;
-  colorHex: string;
+  /** Color de catálogo; opcional: hay catálogos con precio por tamaño/asientos y sin color. */
+  color?: string;
+  colorHex?: string;
   stock: number;
   price?: number;
   sku?: string;
@@ -12,6 +13,13 @@ export interface IProductVariant {
 export interface IProductColor {
   name: string;
   hex: string;
+}
+
+/** Medidas reales del modelo GLB, en centímetros. */
+export interface IProductMedidasBase {
+  ancho?: number;
+  largo?: number;
+  alto?: number;
 }
 
 export interface IProduct extends Document {
@@ -27,6 +35,10 @@ export interface IProduct extends Document {
   variants: IProductVariant[];
   /** URL pública del modelo 3D (.glb) del producto, si tiene uno. */
   model3d?: string;
+  /** Medidas reales del modelo GLB en centímetros; son la referencia para escalarlo a las medidas que pida el cliente. */
+  medidasBase?: IProductMedidasBase;
+  /** Descuento activo en porcentaje (0 = sin descuento). */
+  discountPercent?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,8 +46,9 @@ export interface IProduct extends Document {
 const productVariantSchema = new Schema<IProductVariant>(
   {
     size: { type: String, required: true },
-    color: { type: String, required: true },
-    colorHex: { type: String, required: true },
+    // Opcionales: camas y comedores varían por tamaño/asientos, no por color.
+    color: { type: String },
+    colorHex: { type: String },
     stock: { type: Number, required: true, min: 0, default: 0 },
     price: { type: Number, min: 0 },
     sku: { type: String },
@@ -47,6 +60,15 @@ const productColorSchema = new Schema<IProductColor>(
   {
     name: { type: String, required: true },
     hex: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const medidasBaseSchema = new Schema<IProductMedidasBase>(
+  {
+    ancho: { type: Number, min: 0.1, max: 100000 },
+    largo: { type: Number, min: 0.1, max: 100000 },
+    alto: { type: Number, min: 0.1, max: 100000 },
   },
   { _id: false }
 );
@@ -64,6 +86,10 @@ const productSchema = new Schema<IProduct>(
     colors: { type: [productColorSchema], default: [] },
     variants: { type: [productVariantSchema], default: [] },
     model3d: { type: String },
+    // Medidas reales del modelo GLB en centímetros; son la referencia para escalarlo a las medidas que pida el cliente.
+    medidasBase: { type: medidasBaseSchema },
+    // Descuento activo en porcentaje (0 = sin descuento).
+    discountPercent: { type: Number, min: 0, max: 100, default: 0 },
   },
   { timestamps: true }
 );
