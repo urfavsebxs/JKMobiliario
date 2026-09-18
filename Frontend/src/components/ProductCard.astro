@@ -16,6 +16,15 @@ const precioFinal = precioConDescuento(product.price, product.discountPercent);
 // Con descuento aplicado un precio final de 0 es un precio real ($ 0), no una
 // cotización: "Cotización" se reserva para productos sin precio (price <= 0).
 const precioFinalTexto = tieneDescuento ? formatPrice(precioFinal) : precioTexto(product.price);
+
+// Swatches de colores: se muestran como máximo 6 círculos; si hay más, el
+// último hueco es un indicador "+N". La fila solo se pinta si el producto
+// tiene colores, así las tarjetas actuales (colors: []) no cambian.
+const MAX_COLORES_VISIBLES = 6;
+const colores = product.colors ?? [];
+const coloresVisibles = colores.slice(0, MAX_COLORES_VISIBLES);
+const coloresRestantes = colores.slice(MAX_COLORES_VISIBLES);
+const nombresColores = colores.map((color) => color.name).join(", ");
 ---
 
 <a href={`/products/${product._id}`} class="group block">
@@ -56,4 +65,33 @@ const precioFinalTexto = tieneDescuento ? formatPrice(precioFinal) : precioTexto
       )
     }
   </div>
+  {
+    colores.length > 0 && (
+      <ul
+        class="mt-1.5 flex items-center gap-1.5"
+        aria-label={`Colores disponibles: ${nombresColores}`}
+      >
+        {coloresVisibles.map((color) => (
+          <li
+            class="h-4 w-4 shrink-0 rounded-full border border-jk-mist"
+            style={`background-color: ${color.hex}`}
+            title={color.name}
+          >
+            <span class="sr-only">{color.name}</span>
+          </li>
+        ))}
+        {coloresRestantes.length > 0 && (
+          <li
+            class="flex h-4 items-center font-sans text-[12px] leading-none text-jk-gold-muted"
+            title={`También en: ${coloresRestantes.map((color) => color.name).join(", ")}`}
+          >
+            <span aria-hidden="true">+{coloresRestantes.length}</span>
+            <span class="sr-only">
+              {` y ${coloresRestantes.length} ${coloresRestantes.length === 1 ? "color más" : "colores más"}: ${coloresRestantes.map((color) => color.name).join(", ")}`}
+            </span>
+          </li>
+        )}
+      </ul>
+    )
+  }
 </a>
