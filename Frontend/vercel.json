@@ -1,11 +1,3 @@
 {
-  "buildCommand": "astro build",
-  "outputDirectory": "dist",
-  "framework": "astro",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": "astro"
 }
