@@ -219,8 +219,17 @@ export default function Visor3D({
       <aside className="rounded-[4px] border border-jk-gold/60 bg-white p-5">
         <h3 className="font-sans text-[16px] font-semibold text-jk-ink">Personaliza tu mueble</h3>
         <p className="mt-1 font-sans text-[13px] leading-relaxed text-jk-gold-deep">
-          Define las medidas y el acabado; el modelo se actualiza al instante.
+          {medidasBase
+            ? "Define las medidas y el acabado; el modelo se actualiza al instante."
+            : "Elige el acabado del mueble y verás el cambio al instante."}
         </p>
+
+        {!medidasBase && (
+          <p className="mt-2 rounded-md border border-jk-gold/40 bg-jk-cream/60 px-3 py-2 font-sans text-[12px] leading-relaxed text-jk-gold-deep">
+            Este producto aún no tiene medidas base configuradas; el modelo se muestra a escala
+            original.
+          </p>
+        )}
 
         {medidasBase && (
           <div className="mt-5 border-t border-jk-gold/40 pt-4">

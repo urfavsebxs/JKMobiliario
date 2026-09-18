@@ -1,5 +1,9 @@
 import { atom } from "nanostores";
 
+// `MedidasBase` vive en el contrato de tipos del producto; se re-exporta aquí
+// porque el visor 3D la importa junto al store.
+export type { MedidasBase } from "./types";
+
 export interface MedidasMueble {
   /** Ancho en centímetros. */
   ancho?: number;
@@ -7,12 +11,6 @@ export interface MedidasMueble {
   alto?: number;
   /** Largo/profundidad en centímetros. */
   profundo?: number;
-}
-
-export interface MedidasBase {
-  ancho?: number;
-  largo?: number;
-  alto?: number;
 }
 
 /**

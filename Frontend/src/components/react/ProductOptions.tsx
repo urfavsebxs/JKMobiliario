@@ -3,10 +3,26 @@ import { useStore } from "@nanostores/react";
 import type { Product, ProductVariant } from "../../lib/types";
 import { colorMueble, setColorMueble } from "../../lib/colorMueble";
 import { fijarMedidas, medidasMueble } from "../../lib/medidasMueble";
-import { formatPrice, precioTexto } from "../../lib/precio";
+import { descuentoAplicable, formatPrice, precioConDescuento, precioTexto } from "../../lib/precio";
 
 interface ProductOptionsProps {
   product: Product;
+}
+
+/**
+ * Una variante coincide por tamaño. El color solo filtra cuando ambos lados
+ * lo definen: variantes sin color (precio por tamaño) o productos sin colores
+ * seleccionados coinciden igualmente.
+ */
+function coincideVariante(
+  variant: ProductVariant,
+  selectedSize: string,
+  selectedColor: string,
+): boolean {
+  return (
+    variant.size === selectedSize &&
+    (!variant.color || !selectedColor || variant.color === selectedColor)
+  );
 }
 
 export default function ProductOptions({ product }: ProductOptionsProps) {
@@ -33,13 +49,12 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
   const hasVariants = product.variants && product.variants.length > 0;
 
   useEffect(() => {
-    if (hasVariants && selectedSize && selectedColor) {
-      const variant = product.variants.find(
-        (v) => v.size === selectedSize && v.color === selectedColor
-      );
-      if (variant) {
-        setCurrentStock(variant.stock);
-      }
+    if (!hasVariants || !selectedSize) return;
+    const variant = product.variants.find((v) =>
+      coincideVariante(v, selectedSize, selectedColor)
+    );
+    if (variant) {
+      setCurrentStock(variant.stock);
     }
   }, [selectedSize, selectedColor, product.variants, hasVariants]);
 
@@ -83,12 +98,30 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
   }, [medidas]);
 
   const currentVariant = hasVariants
-    ? product.variants.find(
-        (v) => v.size === selectedSize && v.color === selectedColor
+    ? product.variants.find((v) =>
+        coincideVariante(v, selectedSize, selectedColor)
       )
     : undefined;
 
   const displayPrice = currentVariant?.price || product.price;
+
+  const descuento = descuentoAplicable(product.discountPercent);
+  const aplicaDescuento = descuento > 0 && displayPrice > 0;
+  const precioFinal = aplicaDescuento
+    ? precioConDescuento(displayPrice, product.discountPercent)
+    : displayPrice;
+
+  // La variante más barata que el precio base ya se compara tachando el precio
+  // de catálogo. Con descuento activo, el tachado pasa a ser el precio efectivo
+  // antes del porcentaje, para que el badge -X % sea consistente con las cifras.
+  const varianteMasBarata = Boolean(
+    currentVariant?.price && currentVariant.price < product.price
+  );
+  const precioOriginal = aplicaDescuento
+    ? displayPrice
+    : varianteMasBarata
+      ? product.price
+      : null;
 
   /**
    * Construye el mensaje de WhatsApp con las especificaciones del producto
@@ -180,43 +213,34 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
   return (
     <div className="space-y-6">
       {/* Precio */}
-      <div className="flex items-baseline gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-3xl font-bold text-gray-900">
-          {precioTexto(displayPrice)}
+          {/* Con descuento, un final de 0 es "$ 0" (precio real); "Cotización"
+              queda reservado a productos sin precio base. */}
+          {aplicaDescuento ? formatPrice(precioFinal) : precioTexto(precioFinal)}
         </span>
-        {currentVariant?.price && currentVariant.price < product.price && (
+        {precioOriginal !== null && (
           <span className="text-lg text-gray-400 line-through">
-            {formatPrice(product.price)}
+            <span className="sr-only">Precio original: </span>
+            {formatPrice(precioOriginal)}
+          </span>
+        )}
+        {aplicaDescuento && (
+          <span className="rounded-full bg-jk-gold-deep px-2 py-0.5 text-xs font-semibold text-white">
+            <span className="sr-only">Descuento del </span>-{descuento} %
           </span>
         )}
       </div>
 
-      {/* Stock */}
+      {/* Stock: los muebles se fabrican a pedido, así que no se anuncian cifras. */}
       <div className="flex items-center gap-2">
-        {currentStock > 0 ? (
-          <>
-            <span
-              className={`w-2.5 h-2.5 rounded-full ${
-                currentStock > 5
-                  ? "bg-green-500"
-                  : currentStock > 0
-                  ? "bg-yellow-500"
-                  : "bg-red-500"
-              }`}
-              aria-hidden="true"
-            ></span>
-            <span className="text-sm text-gray-700">
-              {currentStock > 5
-                ? "En stock"
-                : `Solo quedan ${currentStock} unidades`}
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500" aria-hidden="true"></span>
-            <span className="text-sm text-red-600 font-medium">Agotado</span>
-          </>
-        )}
+        <span
+          className={`w-2.5 h-2.5 rounded-full ${
+            currentStock > 0 ? "bg-green-500" : "bg-gray-400"
+          }`}
+          aria-hidden="true"
+        ></span>
+        <span className="text-sm text-gray-700">Stock</span>
       </div>
 
       {/* Selector de medidas predefinidas + personalizada */}
