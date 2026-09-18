@@ -5,7 +5,7 @@ import Layout from "../../layouts/Layout.astro";
 import FiltrosCatalogo from "../../components/site/FiltrosCatalogo.astro";
 import PanelCategorias from "../../components/site/PanelCategorias.astro";
 import ProductGrid from "../../components/ProductGrid.astro";
-import { getProducts } from "../../lib/api";
+import { getAllProducts } from "../../lib/api";
 import type { Product } from "../../lib/types";
 
 const categoria = decodeURIComponent(Astro.params.categoria ?? "");
@@ -15,8 +15,7 @@ const medidaMax = (Astro.url.searchParams.get("max") || "").trim();
 
 let productos: Product[] = [];
 try {
-  const { products } = await getProducts(1, 100);
-  productos = products;
+  productos = await getAllProducts();
 } catch {
   productos = [];
 }
@@ -76,7 +75,7 @@ const filtrados = productos.filter((p) => {
       class="relative mx-auto max-w-[1440px] px-5 pt-16 pb-12 lg:px-[166px] lg:pt-[115px] lg:pb-[57px]"
     >
       <h1 class="sr-only">{categoria}</h1>
-      <PanelCategorias />
+      <PanelCategorias activa={categoria} />
     </div>
   </section>
 

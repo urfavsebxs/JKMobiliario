@@ -1,41 +1,127 @@
 ---
-const columnas = [
-  { titulo: "Camas", slug: "camas", items: ["Familiar", "Pie de cama", "Camarotes"] },
-  { titulo: "Sofás", slug: "sofas", items: ["Interiores", "Esquineros"] },
-  { titulo: "Sillas", slug: "sillas", items: ["Exteriores", "Interiores", "Auxiliares"] },
-  { titulo: "Mesas", slug: "mesas", items: ["De centro", "Auxiliares", "Nocheros"] },
+interface Props {
+  /** Slug de la categoría activa (el de la URL) para marcarla visualmente. */
+  activa?: string;
+}
+
+const { activa = "" } = Astro.props;
+
+/**
+ * Normaliza igual que `catalogo/[categoria].astro`: minúsculas, sin acentos y
+ * guiones convertidos en espacios, para comparar el slug de la URL con el
+ * nombre de la categoría aunque la BD guarde "Sofás" o "sofas minimalistas".
+ */
+const normalizar = (texto: string) =>
+  texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const activaNormalizada = normalizar(activa);
+
+/** Las 10 categorías de los PDFs, agrupadas por área. */
+const grupos = [
+  {
+    titulo: "Camas",
+    categorias: [
+      { nombre: "Camas Minimalistas", slug: "camas-minimalistas" },
+      { nombre: "Camas Modernas", slug: "camas-modernas" },
+    ],
+  },
+  {
+    titulo: "Comedores",
+    categorias: [{ nombre: "Comedores", slug: "comedores" }],
+  },
+  {
+    titulo: "Mesas",
+    categorias: [
+      { nombre: "Mesas de Centro", slug: "mesas-de-centro" },
+      { nombre: "Mesas de Noche", slug: "mesas-de-noche" },
+    ],
+  },
+  {
+    titulo: "Sillas",
+    categorias: [
+      { nombre: "Sillas de Barra", slug: "sillas-de-barra" },
+      { nombre: "Sillas Minimalistas", slug: "sillas-minimalistas" },
+      { nombre: "Sillas Modernas", slug: "sillas-modernas" },
+    ],
+  },
+  {
+    titulo: "Sofás",
+    categorias: [
+      { nombre: "Sofás Minimalistas", slug: "sofas-minimalistas" },
+      { nombre: "Sofás Modernos", slug: "sofas-modernos" },
+    ],
+  },
 ];
+
+const esActiva = (slug: string) =>
+  activaNormalizada !== "" && normalizar(slug) === activaNormalizada;
+
+const tituloBase =
+  "font-sans text-[20px] font-bold leading-[30px] text-white lg:text-[24px] lg:leading-[36px]";
+const enlaceBase = "block font-sans text-[16px] leading-[32px] transition-colors";
+const enlaceOn = "text-jk-gold";
+const enlaceOff = "text-white/70 hover:text-white";
 ---
 
 <nav
-  aria-label="Subcategorías"
-  class="flex flex-col gap-8 lg:flex-row lg:gap-0"
+  aria-label="Categorías del catálogo"
+  class="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:flex lg:flex-row lg:gap-x-[24px]"
 >
   {
-    columnas.map((columna) => (
-      <div class="flex lg:w-[233px]">
-        <a
-          href={`/catalogo/${columna.slug}`}
-          class="mt-[7px] w-[79px] shrink-0 font-sans text-[24px] font-bold leading-[36px] text-white transition-opacity hover:opacity-80"
-        >
-          {columna.titulo}
-        </a>
+    grupos.map((grupo) => {
+      // "Comedores" es a la vez área y categoría: el título hace de enlace para
+      // no repetir el mismo texto dos veces en la misma columna.
+      const tituloEsEnlace =
+        grupo.categorias.length === 1 &&
+        normalizar(grupo.categorias[0].nombre) === normalizar(grupo.titulo);
+      const unica = grupo.categorias[0];
 
-        <span class="mx-[10px] mt-[10px] h-[86px] w-px shrink-0 bg-jk-gold/85" />
+      return (
+        <div class="min-w-0 lg:flex-1">
+          {tituloEsEnlace ? (
+            <a
+              href={`/catalogo/${unica.slug}`}
+              aria-current={esActiva(unica.slug) ? "page" : undefined}
+              class:list={[
+                tituloBase,
+                "inline-block transition-colors",
+                esActiva(unica.slug) ? enlaceOn : "hover:text-jk-gold",
+              ]}
+            >
+              {grupo.titulo}
+            </a>
+          ) : (
+            <p class={tituloBase}>{grupo.titulo}</p>
+          )}
 
-        <ul>
-          {columna.items.map((item) => (
-            <li>
-              <a
-                href={`/catalogo/${columna.slug}`}
-                class="block font-sans text-[16px] leading-[36px] text-white/70 transition-colors hover:text-white"
-              >
-                {item}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))
+          <span class="mt-[10px] block h-px w-[79px] bg-jk-gold/85" aria-hidden="true" />
+
+          {!tituloEsEnlace && (
+            <ul class="mt-[6px]">
+              {grupo.categorias.map((categoria) => (
+                <li>
+                  <a
+                    href={`/catalogo/${categoria.slug}`}
+                    aria-current={esActiva(categoria.slug) ? "page" : undefined}
+                    class:list={[
+                      enlaceBase,
+                      esActiva(categoria.slug) ? enlaceOn : enlaceOff,
+                    ]}
+                  >
+                    {categoria.nombre}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    })
   }
 </nav>

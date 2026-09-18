@@ -17,12 +17,20 @@ const links = [
   { label: "Nosotros", href: "/#nosotros", subcategorias: false },
 ];
 
+// `pointer-events-auto`: el contenedor de la cabecera es transparente al ratón
+// (ver comentario en el div) y cada control reactiva la interacción.
 const linkBase =
-  "jk-nav-ink font-sans text-[16px] font-medium transition-[color,opacity] hover:opacity-70 lg:text-[20px]";
+  "jk-nav-ink pointer-events-auto font-sans text-[16px] font-medium transition-[color,opacity] hover:opacity-70 lg:text-[20px]";
 
 // El grupo abarca toda la altura de la cabecera para que el ratón pueda bajar
 // desde el enlace hasta el panel sin que el hover se pierda por el camino.
 const grupoAltura = overlay ? "lg:h-[126px]" : "lg:h-[150px]";
+
+// En /catalogo/<slug> el panel de categorías marca la activa (también en el
+// desplegable y en el menú móvil, no solo en la banda del hero).
+const rutaCategoria =
+  Astro.url.pathname.match(/^\/catalogo\/([^/]+)\/?$/)?.[1] ?? "";
+const categoriaActiva = rutaCategoria ? decodeURIComponent(rutaCategoria) : "";
 
 const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 const contactHref = whatsapp ? `https://wa.me/${whatsapp}` : "/#contacto";
@@ -47,16 +55,20 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     overlay ? "absolute" : "jk-header-solid relative bg-jk-surface",
   ]}
 >
+  <!-- El contenedor no captura el ratón: así el panel de categorías (que vive
+       detrás de esta capa, con z-index negativo) recibe el hover en cuanto el
+       cursor sale del enlace "Catálogo", sin ningún hueco por el que perderse.
+       Cada control reactiva los eventos con `pointer-events-auto`. -->
   <div
     class:list={[
-      "mx-auto flex max-w-[1440px] items-center gap-4 px-5 py-4 lg:gap-x-[32px] lg:py-0 lg:pl-[92px] lg:pr-[52px] xl:gap-x-[50px]",
+      "pointer-events-none mx-auto flex max-w-[1440px] items-center gap-4 px-5 py-4 lg:gap-x-[32px] lg:py-0 lg:pl-[92px] lg:pr-[52px] xl:gap-x-[50px]",
       overlay ? "lg:h-[126px]" : "lg:h-[150px]",
     ]}
   >
     <a
       href="/"
       class:list={[
-        "jk-nav-ink font-brand text-[26px] font-medium tracking-[-0.25px] transition-[color,opacity] lg:text-[32px]",
+        "jk-nav-ink pointer-events-auto font-brand text-[26px] font-medium tracking-[-0.25px] transition-[color,opacity] lg:text-[32px]",
         wordmark,
       ]}
     >
@@ -71,10 +83,16 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       {
         links.map((link) =>
           link.subcategorias ? (
-            <div class:list={["jk-cat-group group/cat flex items-center", grupoAltura]}>
+            <div
+              class:list={["jk-cat-group group/cat flex items-center", grupoAltura]}
+              data-jk-cat-group
+            >
               <a
                 href={link.href}
+                data-jk-cat-link
                 aria-haspopup="true"
+                aria-expanded="false"
+                aria-controls="jk-cat-panel"
                 class:list={[
                   linkBase,
                   linkColor,
@@ -85,13 +103,22 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
               </a>
 
               <div
-                class="jk-cat-panel invisible absolute inset-x-0 top-0 -z-10 hidden opacity-0 transition-opacity duration-150 lg:block"
+                id="jk-cat-panel"
+                data-jk-cat-panel
+                class="jk-cat-panel pointer-events-auto invisible absolute inset-x-0 top-0 -z-10 hidden opacity-0 transition-opacity duration-150 lg:block"
               >
                 <div class="bg-black/80">
                   <div
-                    class="mx-auto max-w-[1440px] px-5 pt-16 pb-12 lg:px-[166px] lg:pt-[115px] lg:pb-[57px]"
+                    class:list={[
+                      "mx-auto max-w-[1440px] px-5 pt-16 pb-12 lg:px-[166px] lg:pb-[57px]",
+                      // El contenido arranca justo en el borde inferior de la
+                      // cabecera: así ningún enlace queda bajo la capa que la
+                      // cabecera pinta por encima del panel y todos son
+                      // clicables.
+                      overlay ? "lg:pt-[126px]" : "lg:pt-[150px]",
+                    ]}
                   >
-                    <PanelCategorias />
+                    <PanelCategorias activa={categoriaActiva} />
                   </div>
                 </div>
               </div>
@@ -119,7 +146,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       data-jk-login
       aria-label="Iniciar sesión"
       class:list={[
-        "jk-nav-ink hidden items-center gap-2 rounded-lg border border-current/40 px-4 font-sans text-[15px] font-medium transition-opacity hover:opacity-70 lg:inline-flex lg:h-[44px]",
+        "jk-nav-ink pointer-events-auto hidden items-center gap-2 rounded-lg border border-current/40 px-4 font-sans text-[15px] font-medium transition-opacity hover:opacity-70 lg:inline-flex lg:h-[44px]",
         linkColor,
       ]}
     >
@@ -149,7 +176,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       aria-label="Cerrar sesión"
       title="Cerrar sesión"
       class:list={[
-        "jk-nav-ink items-center gap-2 rounded-lg border border-current/40 px-4 font-sans text-[15px] font-medium transition-opacity hover:opacity-70 lg:h-[44px]",
+        "jk-nav-ink pointer-events-auto items-center gap-2 rounded-lg border border-current/40 px-4 font-sans text-[15px] font-medium transition-opacity hover:opacity-70 lg:h-[44px]",
         linkColor,
       ]}
     >
@@ -175,7 +202,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       target={contactTarget}
       rel={contactRel}
       class:list={[
-        "hidden items-center justify-center rounded-lg px-6 py-3 font-label text-[15px] font-medium text-white transition-opacity hover:opacity-90 lg:inline-flex lg:h-[51px] lg:px-[25px] lg:py-0 lg:text-[16px]",
+        "pointer-events-auto hidden items-center justify-center rounded-lg px-6 py-3 font-label text-[15px] font-medium text-white transition-opacity hover:opacity-90 lg:inline-flex lg:h-[51px] lg:px-[25px] lg:py-0 lg:text-[16px]",
         ctaClass,
       ]}
     >
@@ -183,7 +210,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     </a>
 
     <!-- Menú móvil: <details> garantiza el desplegable incluso sin JavaScript -->
-    <details class="ml-auto lg:hidden" data-jk-menu>
+    <details class="pointer-events-auto ml-auto lg:hidden" data-jk-menu>
       <summary
         class:list={[
           "jk-burger flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current",
@@ -226,6 +253,10 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
               ))
             }
           </ul>
+
+          <div class="border-t border-white/10 pt-6">
+            <PanelCategorias activa={categoriaActiva} />
+          </div>
 
           <a
             href={contactHref}
@@ -289,12 +320,16 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
 </header>
 
 <style is:global>
-  /* El desplegable se controla aquí y no con `group-hover:` porque Tailwind
-     envuelve esas utilidades en @media (hover: hover), que deja el panel
-     inerte en cualquier dispositivo que no declare ratón. */
+  /* El desplegable se controla con el atributo `data-open` que pone el script
+     (hover con retardo) y, como respaldo, con `:hover`/`:focus-within`. No se
+     usa `group-hover:` porque Tailwind envuelve esas utilidades en
+     @media (hover: hover), que deja el panel inerte en dispositivos sin ratón.
+     `data-escaping` lo fija Escape para que `:focus-within` no reabra el panel
+     mientras el foco siga en el enlace "Catálogo". */
   @media (min-width: 64rem) {
-    .jk-cat-group:hover .jk-cat-panel,
-    .jk-cat-group:focus-within .jk-cat-panel {
+    .jk-cat-group:not([data-escaping]):hover .jk-cat-panel,
+    .jk-cat-group[data-open]:not([data-escaping]) .jk-cat-panel,
+    .jk-cat-group:not([data-escaping]):focus-within .jk-cat-panel {
       visibility: visible;
       opacity: 1;
     }
@@ -303,8 +338,9 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
   /* Con el desplegable abierto la banda oscura pasa por detrás de toda la
      cabecera. Sobre el fondo claro del modo "solid" el texto negro quedaría
      ilegible, así que pasa a blanco mientras el ratón siga dentro. */
-  .jk-header-solid:has(.jk-cat-group:hover) .jk-nav-ink,
-  .jk-header-solid:has(.jk-cat-group:focus-within) .jk-nav-ink {
+  .jk-header-solid:has(.jk-cat-group[data-open]:not([data-escaping])) .jk-nav-ink,
+  .jk-header-solid:has(.jk-cat-group:not([data-escaping]):hover) .jk-nav-ink,
+  .jk-header-solid:has(.jk-cat-group:not([data-escaping]):focus-within) .jk-nav-ink {
     color: #fff;
   }
 </style>
@@ -511,8 +547,11 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     };
 
     // Cierra al pulsar cualquier enlace (incluye anclas como /#nosotros).
+    // El cierre se aplaza un frame para no interferir con la navegación
+    // nativa del enlace (el <a> ya recibió el clic).
     menu.addEventListener("click", (event) => {
-      if ((event.target as HTMLElement).closest("a")) closeMenu();
+      if (!(event.target as HTMLElement).closest("a")) return;
+      window.requestAnimationFrame(() => closeMenu());
     });
 
     // Cierra al hacer clic fuera del menú.
@@ -531,4 +570,61 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       if (event.matches) closeMenu();
     });
   }
+
+  // --- Desplegable de categorías (escritorio) ---
+  // Entre el enlace "Catálogo" y el panel se interpone la propia cabecera en el
+  // hit-testing, por lo que el `:hover` CSS puro se pierde al cruzar ese hueco.
+  // El script mantiene el panel abierto con `data-open` y solo lo cierra tras
+  // un pequeño retardo al salir del grupo, tiempo de sobra para llegar al panel.
+  document.querySelectorAll<HTMLElement>("[data-jk-cat-group]").forEach((grupo) => {
+    const enlace = grupo.querySelector<HTMLAnchorElement>("[data-jk-cat-link]");
+    const panel = grupo.querySelector<HTMLElement>("[data-jk-cat-panel]");
+    if (!enlace || !panel) return;
+
+    let temporizador: number | undefined;
+
+    const abrir = () => {
+      window.clearTimeout(temporizador);
+      grupo.removeAttribute("data-escaping");
+      grupo.setAttribute("data-open", "");
+      enlace.setAttribute("aria-expanded", "true");
+    };
+
+    const cerrar = () => {
+      window.clearTimeout(temporizador);
+      grupo.removeAttribute("data-open");
+      enlace.setAttribute("aria-expanded", "false");
+    };
+
+    grupo.addEventListener("mouseenter", abrir);
+
+    grupo.addEventListener("mouseleave", () => {
+      window.clearTimeout(temporizador);
+      temporizador = window.setTimeout(cerrar, 200);
+    });
+
+    grupo.addEventListener("focusin", () => {
+      // Tras Escape, el foco vuelve al enlace: no debe reabrir el panel.
+      if (grupo.hasAttribute("data-escaping")) return;
+      abrir();
+    });
+
+    grupo.addEventListener("focusout", (event) => {
+      const destino = event.relatedTarget as Node | null;
+      // El foco sigue dentro del grupo (enlace o panel): se mantiene abierto.
+      if (destino && grupo.contains(destino)) return;
+      grupo.removeAttribute("data-escaping");
+      cerrar();
+    });
+
+    grupo.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      // Cierra el panel y devuelve el foco al enlace "Catálogo". El atributo
+      // data-escaping evita que :focus-within lo reabra en el acto.
+      event.stopPropagation();
+      grupo.setAttribute("data-escaping", "");
+      cerrar();
+      enlace.focus();
+    });
+  });
 </script>
