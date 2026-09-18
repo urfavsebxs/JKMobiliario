@@ -6,7 +6,7 @@
  * `localStorage` no existe allí.
  */
 
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "../../../lib/apiBase";
 
 /** Extrae el mensaje de un error desconocido, con un texto de respaldo. */
 export function mensajeError(error: unknown, porDefecto: string): string {

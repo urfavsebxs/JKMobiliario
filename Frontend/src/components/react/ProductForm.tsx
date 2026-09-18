@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_URL } from "../../lib/apiBase";
 import { proxyImageUrl } from "../../lib/images";
 import { descuentoAplicable, formatPrice, precioConDescuento } from "../../lib/precio";
 import type { MedidasBase } from "../../lib/types";
@@ -45,7 +46,6 @@ export default function ProductForm({ productId, product }: Props) {
   const [uploadStatus, setUploadStatus] = useState("");
   const [error, setError] = useState("");
 
-  const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
   const MODELO_MAX_MB = 25;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
