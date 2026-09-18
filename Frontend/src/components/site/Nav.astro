@@ -32,6 +32,13 @@ const rutaCategoria =
   Astro.url.pathname.match(/^\/catalogo\/([^/]+)\/?$/)?.[1] ?? "";
 const categoriaActiva = rutaCategoria ? decodeURIComponent(rutaCategoria) : "";
 
+// En /catalogo y /catalogo/<slug> la propia página ya pinta el panel completo
+// de categorías en su banda oscura. Si aquí se mantuviera el desplegable, al
+// pasar el ratón (o enfocar) "Catálogo" aparecería un segundo panel detrás del
+// hero, duplicando las categorías. En esas rutas el enlace va sin grupo, sin
+// panel y sin atributos ARIA de desplegable; el menú móvil no se ve afectado.
+const enCatalogo = /^\/catalogo(\/|$)/.test(Astro.url.pathname);
+
 const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 const contactHref = whatsapp ? `https://wa.me/${whatsapp}` : "/#contacto";
 const contactTarget = whatsapp ? "_blank" : undefined;
@@ -82,7 +89,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     >
       {
         links.map((link) =>
-          link.subcategorias ? (
+          link.subcategorias && !enCatalogo ? (
             <div
               class:list={["jk-cat-group group/cat flex items-center", grupoAltura]}
               data-jk-cat-group
