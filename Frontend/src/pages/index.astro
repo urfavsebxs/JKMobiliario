@@ -293,34 +293,78 @@ const categorias = [
   <section
     class="mx-auto max-w-[1440px] px-5 pt-20 pb-16 lg:px-[131px] lg:pt-[273px] lg:pb-[238px]"
   >
-    <div class="grid gap-8 lg:grid-cols-3 lg:gap-[31px]">
-      {
-        categorias.map((categoria, i) => (
-          <a
-            href={`/catalogo/${categoria.slug}`}
-            class="jk-categoria block"
-            data-anim
-            data-anim-delay={i * 110}
-          >
-            <figure class="relative">
-              <div class="overflow-hidden rounded-[4px] border border-jk-gold opacity-74">
-                <img
-                  src={categoria.imagen}
-                  alt={categoria.nombre}
-                  class="h-[360px] w-full object-cover lg:h-[495px]"
-                  loading="lazy"
-                />
-              </div>
-              <figcaption class="absolute bottom-[29px] left-[22px]">
-                <span class="jk-linea block h-px w-[48px] bg-jk-gold" />
-                <span class="mt-[6px] block font-sans text-[24px] font-normal text-white">
-                  {categoria.nombre}
-                </span>
-              </figcaption>
-            </figure>
-          </a>
-        ))
-      }
+    <!-- Carrusel automático en móvil; rejilla de 3 columnas en escritorio.
+         Sin JS (o con movimiento reducido) el track queda como la rejilla
+         apilada original: la clase `jk-cat-on` la agrega el script. -->
+    <div class="jk-cat-vista" data-jk-cat-vista>
+      <div class="jk-cat-track" data-jk-cat-track>
+        {
+          categorias.map((categoria, i) => (
+            <a
+              href={`/catalogo/${categoria.slug}`}
+              class="jk-categoria jk-cat-slide block"
+              data-anim
+              data-anim-delay={i * 110}
+            >
+              <figure class="relative">
+                <div class="overflow-hidden rounded-[4px] border border-jk-gold opacity-74">
+                  <img
+                    src={categoria.imagen}
+                    alt={categoria.nombre}
+                    class="h-[360px] w-full object-cover lg:h-[495px]"
+                    loading="lazy"
+                  />
+                </div>
+                <figcaption class="absolute bottom-[29px] left-[22px]">
+                  <span class="jk-linea block h-px w-[48px] bg-jk-gold" />
+                  <span class="mt-[6px] block font-sans text-[24px] font-normal text-white">
+                    {categoria.nombre}
+                  </span>
+                </figcaption>
+              </figure>
+            </a>
+          ))
+        }
+
+        <!-- Copia de la primera tarjeta para cerrar el bucle sin saltos.
+             Solo se muestra en el carrusel móvil; nunca es enfocable ni la
+             anuncian los lectores de pantalla. -->
+        <a
+          href={`/catalogo/${categorias[0].slug}`}
+          class="jk-categoria jk-cat-slide jk-cat-clon block"
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <figure class="relative">
+            <div class="overflow-hidden rounded-[4px] border border-jk-gold opacity-74">
+              <img
+                src={categorias[0].imagen}
+                alt=""
+                class="h-[360px] w-full object-cover lg:h-[495px]"
+                loading="lazy"
+              />
+            </div>
+            <figcaption class="absolute bottom-[29px] left-[22px]">
+              <span class="jk-linea block h-px w-[48px] bg-jk-gold" />
+              <span class="mt-[6px] block font-sans text-[24px] font-normal text-white">
+                {categorias[0].nombre}
+              </span>
+            </figcaption>
+          </figure>
+        </a>
+      </div>
+
+      <!-- Indicadores del slide activo (solo móvil). Decorativos: sin
+           interacción y ocultos para lectores de pantalla. -->
+      <div class="jk-cat-puntos" data-jk-cat-puntos aria-hidden="true">
+        {
+          categorias.map((_, i) => (
+            <span
+              class={`jk-cat-punto${i === 0 ? " jk-cat-punto-on" : ""}`}
+            />
+          ))
+        }
+      </div>
     </div>
   </section>
 
@@ -480,6 +524,102 @@ const categorias = [
     }
   }
 
+  /* --------------------------------------------------------------------------
+     Carrusel de categorías (solo móvil, < 64rem)
+     - Estado base (sin JS): rejilla apilada idéntica a la maqueta original.
+     - `jk-cat-on` la agrega el JS únicamente en móvil y sin movimiento
+       reducido; recién ahí el track se vuelve `flex` con transición.
+     - El clon y los puntos jamás se muestran en escritorio.
+     -------------------------------------------------------------------------- */
+  .jk-cat-track {
+    display: grid;
+    gap: 2rem; /* equivale al antiguo `gap-8` */
+  }
+
+  .jk-cat-clon,
+  .jk-cat-puntos {
+    display: none;
+  }
+
+  .jk-cat-vista.jk-cat-on {
+    overflow: hidden;
+  }
+
+  .jk-cat-vista.jk-cat-on .jk-cat-track {
+    display: flex;
+    gap: 0;
+    transition: transform 600ms ease;
+    will-change: transform;
+  }
+
+  .jk-cat-vista.jk-cat-on .jk-cat-slide {
+    flex: 0 0 100%;
+    min-width: 100%;
+  }
+
+  .jk-cat-vista.jk-cat-on .jk-cat-clon {
+    display: block;
+  }
+
+  /* En modo carrusel las tarjetas no esperan al reveal: los slides fuera de
+     pantalla nunca se intersecan y quedarían invisibles al rotar. */
+  .jk-cat-vista.jk-cat-on [data-anim].jk-oculto {
+    opacity: 1;
+    transform: none;
+  }
+
+  .jk-cat-vista.jk-cat-on .jk-cat-puntos {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .jk-cat-punto {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.35);
+    transition:
+      background-color 300ms ease,
+      transform 300ms ease;
+  }
+
+  .jk-cat-punto-on {
+    background: var(--color-jk-gold);
+    transform: scale(1.2);
+  }
+
+  /* Escritorio: se restaura exactamente la rejilla de 3 columnas original. */
+  @media (min-width: 64rem) {
+    .jk-cat-vista,
+    .jk-cat-vista.jk-cat-on {
+      overflow: visible;
+    }
+
+    .jk-cat-track,
+    .jk-cat-vista.jk-cat-on .jk-cat-track {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 31px;
+      transform: none !important;
+      transition: none;
+      will-change: auto;
+    }
+
+    .jk-cat-vista.jk-cat-on .jk-cat-slide {
+      flex: none;
+      min-width: 0;
+    }
+
+    .jk-cat-clon,
+    .jk-cat-vista.jk-cat-on .jk-cat-clon,
+    .jk-cat-puntos,
+    .jk-cat-vista.jk-cat-on .jk-cat-puntos {
+      display: none;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .jk-entra,
     .jk-zoom {
@@ -501,6 +641,34 @@ const categorias = [
 
     .jk-categoria img,
     .jk-categoria .jk-linea {
+      transition: none;
+    }
+
+    /* Con movimiento reducido el carrusel nunca se activa: por si la clase
+       quedara puesta (cambio de preferencia en vivo), se fuerza el apilado. */
+    .jk-cat-vista.jk-cat-on {
+      overflow: visible;
+    }
+
+    .jk-cat-vista.jk-cat-on .jk-cat-track {
+      display: grid;
+      gap: 2rem;
+      transform: none !important;
+      transition: none;
+      will-change: auto;
+    }
+
+    .jk-cat-vista.jk-cat-on .jk-cat-slide {
+      flex: none;
+      min-width: 0;
+    }
+
+    .jk-cat-vista.jk-cat-on .jk-cat-clon,
+    .jk-cat-vista.jk-cat-on .jk-cat-puntos {
+      display: none;
+    }
+
+    .jk-cat-punto {
       transition: none;
     }
   }
@@ -538,5 +706,163 @@ const categorias = [
       elemento.classList.add("jk-listo");
       observador.observe(elemento);
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Carrusel automático de "Categorías" (solo móvil < 64rem).
+  // - Bucle perfecto: el track incluye una copia de la primera tarjeta; al
+  //   terminar la transición hacia el clon se salta al slide 0 sin animación.
+  // - Sin JS las tarjetas quedan apiladas como siempre: la clase `jk-cat-on`
+  //   la agrega este script. Con `prefers-reduced-motion: reduce` no se activa.
+  // - Se pausa al tocar (pointerdown/touchstart, se reanuda solo), al pasar el
+  //   ratón, al enfocar con teclado y cuando la pestaña no está visible.
+  // - Es progresivo: si algo falla, quedan las 3 tarjetas apiladas/en rejilla.
+  // ---------------------------------------------------------------------------
+  const catVista = document.querySelector<HTMLElement>("[data-jk-cat-vista]");
+  const catTrack = catVista?.querySelector<HTMLElement>("[data-jk-cat-track]");
+  const catPuntos = catVista?.querySelector<HTMLElement>("[data-jk-cat-puntos]");
+
+  if (catVista && catTrack) {
+    const slides = catTrack.querySelectorAll<HTMLElement>(".jk-cat-slide:not(.jk-cat-clon)");
+    const total = slides.length;
+    const mqMovil = window.matchMedia("(max-width: 63.999rem)");
+    const mqQuieto = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+    const INTERVALO = 4000; // cadencia normal entre tarjetas
+    const PRIMER_AVANCE = 1500; // primer giro, para que el carrusel se note
+    const PAUSA_TACTO = 5000; // pausa tras tocar; después se reanuda solo
+    const REINTENTO = 400; // sondeo mientras está pausado u oculto
+
+    let indice = 0; // slide visible; `total` es el clon
+    let temporizador = 0;
+    let reanudar = 0;
+    let pausadoPorTacto = false;
+    let pausadoPorHover = false;
+    let pausadoPorFoco = false;
+
+    const activo = () => total > 0 && mqMovil.matches && !mqQuieto.matches;
+    const pausado = () => pausadoPorTacto || pausadoPorHover || pausadoPorFoco;
+
+    const pintarPuntos = () => {
+      if (!catPuntos) return;
+      const visible = indice % total;
+      Array.from(catPuntos.children).forEach((punto, i) => {
+        punto.classList.toggle("jk-cat-punto-on", i === visible);
+      });
+    };
+
+    /** Coloca el track en un slide; `animar=false` salta sin transición. */
+    const colocar = (posicion: number, animar = true) => {
+      if (!animar) catTrack.style.transition = "none";
+      catTrack.style.transform = `translateX(-${posicion * 100}%)`;
+      if (!animar) {
+        void catTrack.offsetWidth; // fuerza reflow para que el salto no se anime
+        catTrack.style.transition = "";
+      }
+    };
+
+    const avanzar = () => {
+      // Si el reset del bucle no llegó a ocurrir (p. ej. pestaña oculta en
+      // mitad de la transición), se corrige antes de seguir.
+      if (indice >= total) {
+        indice = 0;
+        colocar(0, false);
+      }
+      indice += 1;
+      colocar(indice);
+      pintarPuntos();
+    };
+
+    const programar = (ms: number) => {
+      window.clearTimeout(temporizador);
+      temporizador = window.setTimeout(ciclo, ms);
+    };
+
+    const ciclo = () => {
+      if (!activo()) return; // en escritorio o con movimiento reducido no corre
+      if (document.hidden || pausado()) {
+        programar(REINTENTO);
+        return;
+      }
+      avanzar();
+      programar(INTERVALO);
+    };
+
+    // Cierra el bucle: al llegar al clon se vuelve al inicio sin animación.
+    catTrack.addEventListener("transitionend", (evento) => {
+      if (evento.target !== catTrack || evento.propertyName !== "transform") return;
+      if (indice >= total) {
+        indice = 0;
+        colocar(0, false);
+        pintarPuntos();
+      }
+    });
+
+    // Pausa temporal al tocar: se reanuda sola pasados unos segundos, aunque
+    // el dedo siga apoyado (nada queda "atascado").
+    const pausarPorTacto = () => {
+      pausadoPorTacto = true;
+      pausadoPorHover = false; // en móvil el toque manda sobre un hover residual
+      window.clearTimeout(reanudar);
+      reanudar = window.setTimeout(() => {
+        pausadoPorTacto = false;
+      }, PAUSA_TACTO);
+    };
+
+    catVista.addEventListener("pointerdown", pausarPorTacto, { passive: true });
+    catVista.addEventListener("touchstart", pausarPorTacto, { passive: true });
+
+    // El hover solo pausa con ratón real (en táctil el navegador sintetiza
+    // `mouseenter` tras el toque y no debe congelar el ciclo).
+    const puedeHover = () => mqHover.matches && navigator.maxTouchPoints === 0;
+
+    catVista.addEventListener("mouseenter", () => {
+      if (puedeHover()) pausadoPorHover = true;
+    });
+    catVista.addEventListener("mouseleave", () => {
+      pausadoPorHover = false;
+    });
+
+    // Solo se pausa si el foco llega por teclado (focus-visible); tras un clic
+    // el navegador también enfoca el enlace, pero eso no debe detener el ciclo.
+    catVista.addEventListener("focusin", (evento) => {
+      const destino = evento.target as HTMLElement;
+      pausadoPorFoco = destino.matches?.(":focus-visible") === true;
+    });
+    catVista.addEventListener("focusout", () => {
+      pausadoPorFoco = false;
+    });
+
+    const aplicarModo = () => {
+      if (activo()) {
+        catVista.classList.add("jk-cat-on");
+        // En móvil las 3 imágenes deben estar listas antes de rotar; se piden
+        // en carga normal solo aquí (en escritorio siguen con lazy loading).
+        catTrack.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
+          img.loading = "eager";
+        });
+        if (indice >= total) {
+          indice = 0;
+          colocar(0, false);
+        }
+        pintarPuntos();
+        programar(PRIMER_AVANCE);
+      } else {
+        catVista.classList.remove("jk-cat-on");
+        window.clearTimeout(temporizador);
+        window.clearTimeout(reanudar);
+        catTrack.style.transform = "";
+        catTrack.style.transition = "";
+        indice = 0;
+        pausadoPorTacto = pausadoPorHover = pausadoPorFoco = false;
+        pintarPuntos();
+      }
+    };
+
+    mqMovil.addEventListener("change", aplicarModo);
+    mqQuieto.addEventListener("change", aplicarModo);
+
+    aplicarModo();
   }
 </script>
