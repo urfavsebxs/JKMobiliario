@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { proxyImageUrl } from "../../lib/images";
-import { formatPrice } from "../../lib/precio";
+import { descuentoAplicable, formatPrice, precioConDescuento } from "../../lib/precio";
+import type { MedidasBase } from "../../lib/types";
 
 interface Props {
   productId?: string;
@@ -27,6 +28,15 @@ export default function ProductForm({ productId, product }: Props) {
   const [variants, setVariants] = useState<any[]>(product?.variants || []);
   const [newVariant, setNewVariant] = useState({ size: "", color: "", colorHex: "", stock: 0, price: 0 });
 
+  const [discountPercent, setDiscountPercent] = useState<number>(
+    descuentoAplicable(product?.discountPercent)
+  );
+  const [medidasBase, setMedidasBase] = useState({
+    ancho: product?.medidasBase?.ancho?.toString() ?? "",
+    largo: product?.medidasBase?.largo?.toString() ?? "",
+    alto: product?.medidasBase?.alto?.toString() ?? "",
+  });
+
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || []);
   const [modelFile, setModelFile] = useState<File | null>(null);
@@ -44,6 +54,11 @@ export default function ProductForm({ productId, product }: Props) {
       ...prev,
       [name]: name === "price" || name === "stock" ? Number(value) : value,
     }));
+  };
+
+  const handleMedidaBaseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setMedidasBase((prev) => ({ ...prev, [name]: value }));
   };
 
   const addSize = () => {
@@ -194,6 +209,13 @@ export default function ProductForm({ productId, product }: Props) {
     let savedId = productId;
 
     try {
+      // Las medidas base sólo viajan si al menos un eje tiene valor > 0.
+      const medidasPayload: MedidasBase = {};
+      (["ancho", "largo", "alto"] as const).forEach((eje) => {
+        const valor = Number(medidasBase[eje]);
+        if (Number.isFinite(valor) && valor > 0) medidasPayload[eje] = valor;
+      });
+
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -204,6 +226,8 @@ export default function ProductForm({ productId, product }: Props) {
         sizes,
         colors,
         variants,
+        discountPercent: descuentoAplicable(discountPercent),
+        ...(Object.keys(medidasPayload).length > 0 ? { medidasBase: medidasPayload } : {}),
       };
 
       const url = productId
@@ -270,6 +294,37 @@ export default function ProductForm({ productId, product }: Props) {
         }
 
         setModelFile(null);
+      }
+
+      // Limpieza explícita de medidas base: el PUT omite `medidasBase` cuando
+      // los tres campos quedan vacíos, así que si el producto ya tenía medidas
+      // hay que borrarlas con un PATCH para que no persistan las anteriores.
+      const teniaMedidasBase =
+        Boolean(productId) && Object.keys(product?.medidasBase ?? {}).length > 0;
+
+      if (teniaMedidasBase && Object.keys(medidasPayload).length === 0) {
+        try {
+          const medidasRes = await fetch(`${API_URL}/api/products/${savedId}/medidas`, {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ medidasBase: {} }),
+          });
+
+          if (!medidasRes.ok) {
+            setError(
+              "El producto se guardó, pero no se pudieron limpiar las medidas base anteriores. Revísalas en «Modelos 3D»."
+            );
+            return;
+          }
+        } catch {
+          setError(
+            "El producto se guardó, pero no se pudieron limpiar las medidas base anteriores (error de conexión)."
+          );
+          return;
+        }
       }
 
       window.location.href = "/admin";
@@ -362,6 +417,35 @@ export default function ProductForm({ productId, product }: Props) {
         </div>
 
         <div>
+          <label htmlFor="discountPercent" className="block text-sm font-medium text-gray-700 mb-1">
+            Descuento (%)
+          </label>
+          <input
+            id="discountPercent"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            value={discountPercent}
+            onChange={(e) => setDiscountPercent(descuentoAplicable(Number(e.target.value)))}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            {descuentoAplicable(discountPercent) > 0 ? (
+              <>
+                Precio final:{" "}
+                <span className="font-medium text-gray-900">
+                  {formatPrice(precioConDescuento(formData.price, discountPercent))}
+                </span>{" "}
+                <span className="line-through">{formatPrice(formData.price)}</span>
+              </>
+            ) : (
+              "0 % = sin descuento"
+            )}
+          </p>
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Stock General</label>
           <input
             type="number"
@@ -372,6 +456,44 @@ export default function ProductForm({ productId, product }: Props) {
             min="0"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
+        </div>
+
+        {/* Medidas base del modelo 3D */}
+        <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <h4 className="text-sm font-medium text-gray-900">Medidas base del modelo 3D (cm)</h4>
+          <p className="mt-1 text-xs text-gray-500">
+            Medidas reales del modelo 3D; permiten escalarlo a las medidas que pida el cliente.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {(
+              [
+                { campo: "ancho", etiqueta: "Ancho (cm)" },
+                { campo: "largo", etiqueta: "Largo (cm)" },
+                { campo: "alto", etiqueta: "Alto (cm)" },
+              ] as const
+            ).map(({ campo, etiqueta }) => (
+              <div key={campo}>
+                <label
+                  htmlFor={`medida-base-${campo}`}
+                  className="block text-xs font-medium text-gray-700 mb-1"
+                >
+                  {etiqueta}
+                </label>
+                <input
+                  id={`medida-base-${campo}`}
+                  type="number"
+                  name={campo}
+                  min="0"
+                  step="0.1"
+                  inputMode="decimal"
+                  placeholder="cm"
+                  value={medidasBase[campo]}
+                  onChange={handleMedidaBaseChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,58 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminDescuentos from "../../components/react/admin/AdminDescuentos";
+import { getAllProducts } from "../../lib/api";
+import type { Product } from "../../lib/types";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+
+let products: Product[] = [];
+let error: string | null = null;
+
+try {
+  products = await getAllProducts();
+} catch (e) {
+  error = e instanceof Error ? e.message : "Error al cargar productos";
+}
+---
+
+<Layout title="Descuentos" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-8">
+      <div>
+        <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">← Volver al panel</a>
+        <h1 class="text-2xl font-bold text-gray-900 mt-1">Descuentos</h1>
+        <p class="text-gray-600">
+          Aplica o retira descuentos por producto o a toda una categoría.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <a
+          href="/admin/modelos"
+          class="bg-white border border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+        >
+          Modelos 3D
+        </a>
+        <a
+          href="/admin/products/new"
+          class="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+        >
+          + Nuevo Producto
+        </a>
+      </div>
+    </div>
+
+    {error ? (
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <p class="text-red-700">{error}</p>
+      </div>
+    ) : (
+      <AdminDescuentos client:load products={products} total={products.length} />
+    )}
+  </div>
+</Layout>

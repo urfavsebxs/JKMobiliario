@@ -2,9 +2,9 @@
 export const prerender = false;
 
 import Layout from "../../layouts/Layout.astro";
-import { getProducts } from "../../lib/api";
+import { getAllProducts } from "../../lib/api";
 import { proxyImageUrl } from "../../lib/images";
-import { formatPrice } from "../../lib/precio";
+import { descuentoAplicable, formatPrice } from "../../lib/precio";
 
 let products = [];
 let total = 0;
@@ -16,9 +16,8 @@ if (!token) {
 }
 
 try {
-  const response = await getProducts(1, 100);
-  products = response.products;
-  total = response.total;
+  products = await getAllProducts();
+  total = products.length;
 } catch (e) {
   error = e instanceof Error ? e.message : "Error al cargar productos";
 }
@@ -31,12 +30,26 @@ try {
         <h1 class="text-2xl font-bold text-gray-900">Panel de Administración</h1>
         <p class="text-gray-600">{total} productos en total</p>
       </div>
-      <a
-        href="/admin/products/new"
-        class="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
-      >
-        + Nuevo Producto
-      </a>
+      <div class="flex flex-wrap items-center gap-3">
+        <a
+          href="/admin/modelos"
+          class="bg-white border border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+        >
+          Modelos 3D
+        </a>
+        <a
+          href="/admin/descuentos"
+          class="bg-white border border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+        >
+          Descuentos
+        </a>
+        <a
+          href="/admin/products/new"
+          class="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+        >
+          + Nuevo Producto
+        </a>
+      </div>
     </div>
 
     {error ? (
@@ -51,8 +64,10 @@ try {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descuento</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variantes</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modelo 3D</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
@@ -79,6 +94,15 @@ try {
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatPrice(product.price)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  {descuentoAplicable(product.discountPercent) > 0 ? (
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-jk-gold/30 text-jk-gold-deep">
+                      -{descuentoAplicable(product.discountPercent)} %
+                    </span>
+                  ) : (
+                    <span class="text-gray-400">—</span>
+                  )}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     product.stock > 5 ? "bg-green-100 text-green-800" : product.stock > 0 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"
@@ -88,6 +112,15 @@ try {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {product.variants.length} variants
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  {product.model3d ? (
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      Sí
+                    </span>
+                  ) : (
+                    <span class="text-gray-400">—</span>
+                  )}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <a href={`/admin/products/${product._id}`} class="text-gray-900 hover:text-gray-600 mr-3">Editar</a>
