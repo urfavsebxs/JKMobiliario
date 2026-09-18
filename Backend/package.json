@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "catalog:manifest": "python3 catalog/build-manifest.py",
+    "catalog:load": "tsx src/scripts/loadCatalog.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

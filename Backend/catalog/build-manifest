@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Wrapper reproducible del generador de manifiesto.
+# Uso: ./catalog/build-manifest [--skip-images] [--pdf-dir DIR] [--images-dir DIR]
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3 "${SCRIPT_DIR}/build-manifest.py" "$@"
