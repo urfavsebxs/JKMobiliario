@@ -5,9 +5,17 @@ import { descuentoAplicable, formatPrice, precioConDescuento, precioTexto } from
 
 interface Props {
   product: Product;
+  /** Ruta del catálogo (con sus filtros) para volver desde la ficha. */
+  volver?: string;
 }
 
-const { product } = Astro.props;
+const { product, volver } = Astro.props;
+
+// Enlace a la ficha: si viene `volver`, se adjunta para que el botón de
+// regreso devuelva al usuario al punto exacto del catálogo.
+const hrefProducto = volver
+  ? `/products/${product._id}?volver=${encodeURIComponent(volver)}`
+  : `/products/${product._id}`;
 
 const imageUrl = proxyImageUrl(product.images[0]);
 const descuento = descuentoAplicable(product.discountPercent);
@@ -28,7 +36,7 @@ const nombresColores = colores.map((color) => color.name).join(", ");
 ---
 
 <div class="group relative">
-  <a href={`/products/${product._id}`} class="block">
+  <a href={hrefProducto} class="block">
     <div class="aspect-[369/491] overflow-hidden rounded-[4px] border border-jk-gold bg-jk-mist">
       {
         imageUrl ? (

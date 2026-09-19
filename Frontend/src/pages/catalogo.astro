@@ -74,6 +74,9 @@ const filtrados = productos.filter((p) => {
 // haya límites informados y la lista quede vacía).
 const sinResultadosMedidas = filtrados.length === 0 && tieneLimitesMedidas(limites);
 
+// Estado vacío general (las medidas tienen prioridad para no duplicar avisos).
+const sinResultados = filtrados.length === 0 && !tieneLimitesMedidas(limites);
+
 // ─── Paginación ──────────────────────────────────────────────────────
 /** Productos por página del catálogo. */
 const PAGE_SIZE = 12;
@@ -100,6 +103,10 @@ if (anchoMin) parametrosPaginacion.anchoMin = anchoMin;
 if (anchoMax) parametrosPaginacion.anchoMax = anchoMax;
 if (largoMin) parametrosPaginacion.largoMin = largoMin;
 if (largoMax) parametrosPaginacion.largoMax = largoMax;
+
+// Ruta exacta del catálogo en este render (con filtros y página) para que el
+// botón "volver" de la ficha del producto regrese al mismo punto.
+const volver = Astro.url.pathname + Astro.url.search;
 
 const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 const waMedidasHref = whatsapp
@@ -154,7 +161,26 @@ const waMedidasHref = whatsapp
         </div>
       )}
 
-      <ProductGrid products={productosPagina} />
+      {sinResultados && (
+        <div class="mb-10 rounded-[10px] border border-jk-gold bg-jk-cream px-5 py-4 font-sans text-[16px] leading-[1.5] text-jk-ink">
+          <p>
+            {busqueda
+              ? "No hay productos que coincidan con tu búsqueda."
+              : "Aún no tenemos productos publicados en el catálogo."}
+            Los muebles se fabrican a la medida:
+            <a
+              href={waMedidasHref}
+              target={whatsapp ? "_blank" : undefined}
+              rel={whatsapp ? "noopener noreferrer" : undefined}
+              class="font-medium underline transition-opacity hover:opacity-70"
+            >
+              escríbenos por WhatsApp
+            </a>.
+          </p>
+        </div>
+      )}
+
+      <ProductGrid products={productosPagina} volver={volver} />
 
       <Paginacion
         pagina={pagina}

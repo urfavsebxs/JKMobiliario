@@ -28,6 +28,17 @@ try {
 const modelo = product?.model3d
   ? { url: proxyModelUrl(product.model3d), medidasBase: product.medidasBase }
   : undefined;
+
+// Ruta de vuelta al catálogo: solo se acepta una ruta interna de /catalogo
+// (nada de absolutas `//`, esquemas `:` ni URLs externas). Si no es válida,
+// el botón vuelve al catálogo genérico.
+const volverParam = Astro.url.searchParams.get("volver") ?? "";
+const volver =
+  volverParam.startsWith("/catalogo") &&
+  !volverParam.startsWith("//") &&
+  !volverParam.includes(":")
+    ? volverParam
+    : "/catalogo";
 ---
 
 <Layout title={product?.name || "Producto"} bodyClass="bg-jk-surface text-jk-ink">
@@ -35,7 +46,10 @@ const modelo = product?.model3d
     {error ? (
       <div class="rounded-lg border border-jk-gold bg-white p-6 text-center">
         <p class="text-red-700">{error}</p>
-        <a href="/catalogo" class="mt-4 inline-block text-jk-gold-deep hover:underline"
+        <a
+          href={volver}
+          data-jk-volver-catalogo
+          class="mt-4 inline-block text-jk-gold-deep hover:underline"
           >Volver al catálogo</a
         >
       </div>
@@ -43,7 +57,8 @@ const modelo = product?.model3d
       product && (
         <div class="mb-6">
           <a
-            href="/catalogo"
+            href={volver}
+            data-jk-volver-catalogo
             class="font-sans text-[15px] text-jk-gold-deep hover:underline"
             >← Volver al catálogo</a
           >
@@ -109,4 +124,26 @@ const modelo = product?.model3d
       )
     }
   </div>
+
+  <script>
+    // Mejora progresiva: si el enlace no trae `volver` (tarjetas compartidas o
+    // navegaciones antiguas) y venimos del catálogo del mismo origen, se usa el
+    // referrer para volver al punto exacto.
+    if (!new URLSearchParams(window.location.search).has("volver")) {
+      const enlaces = document.querySelectorAll<HTMLAnchorElement>("[data-jk-volver-catalogo]");
+
+      try {
+        const referencia = new URL(document.referrer);
+        if (
+          referencia.origin === window.location.origin &&
+          referencia.pathname.startsWith("/catalogo")
+        ) {
+          const destino = referencia.pathname + referencia.search;
+          enlaces.forEach((enlace) => enlace.setAttribute("href", destino));
+        }
+      } catch {
+        // Sin referrer o inválido: se mantiene el /catalogo por defecto.
+      }
+    }
+  </script>
 </Layout>

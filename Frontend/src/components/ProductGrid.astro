@@ -4,13 +4,15 @@ import ProductCard from "./ProductCard.astro";
 
 interface Props {
   products: Product[];
+  /** Ruta del catálogo (con sus filtros) que se propaga a cada tarjeta. */
+  volver?: string;
 }
 
-const { products } = Astro.props;
+const { products, volver } = Astro.props;
 ---
 
 <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[36px]">
-  {products.map((product) => <ProductCard product={product} />)}
+  {products.map((product) => <ProductCard product={product} volver={volver} />)}
 </div>
 
 {
