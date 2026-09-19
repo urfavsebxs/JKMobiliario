@@ -164,33 +164,65 @@ export const removeImageQuerySchema = z.object({
 const RESERVED_CATEGORY_NAME = "__nueva__";
 
 /**
+ * Campo `name` de categoría: recortado, no vacío, <=100 y sin el centinela
+ * `__nueva__` que usa el select del frontend. Compartido por creación y update.
+ */
+const categoryNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Name is required")
+  .max(100)
+  .refine((v) => v.toLowerCase() !== RESERVED_CATEGORY_NAME, {
+    message: "Nombre de categoría reservado",
+  });
+
+/**
+ * Campo `group`: recortado, <=100; "" o "   " se normalizan a undefined para
+ * que el service caiga al `name` (regla idéntica en creación y update).
+ */
+const categoryGroupSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .transform((v) => v || undefined);
+
+/**
+ * Campo `image`: cadena vacía se normaliza a undefined (quitar imagen); si
+ * viene, debe ser una URL http(s) de hasta 2048 caracteres.
+ */
+const categoryImageSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((v) => v === "" || /^https?:\/\//.test(v), { message: "image must be an http(s) URL" })
+  .transform((v) => v || undefined);
+
+/**
  * POST /api/categories body.
- * - `name` rechaza el centinela `__nueva__` que usa el select del frontend.
- * - `group` opcional: "" o "   " se normalizan a undefined y el service cae
- *   al `name`; se recorta y se rechaza por encima de 100 caracteres.
- * - `image` admite cadena vacía (se normaliza a undefined); si viene, debe
- *   ser una URL http(s) de hasta 2048 caracteres.
+ * - `name` obligatorio con las reglas de `categoryNameSchema`.
+ * - `group` e `image` opcionales con sus reglas compartidas.
  */
 export const createCategorySchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(100)
-    .refine((v) => v.toLowerCase() !== RESERVED_CATEGORY_NAME, {
-      message: "Nombre de categoría reservado",
-    }),
-  group: z
-    .string()
-    .trim()
-    .max(100)
-    .transform((v) => v || undefined)
-    .optional(),
-  image: z
-    .string()
-    .trim()
-    .max(2048)
-    .refine((v) => v === "" || /^https?:\/\//.test(v), { message: "image must be an http(s) URL" })
-    .transform((v) => v || undefined)
-    .optional(),
+  name: categoryNameSchema,
+  group: categoryGroupSchema.optional(),
+  image: categoryImageSchema.optional(),
 });
+
+/**
+ * PUT /api/categories/:id body.
+ * Todos los campos son opcionales, pero debe venir al menos uno.
+ *
+ * Nota: Zod conserva la clave cuando el cliente la envía (aunque el
+ * transform la deje en undefined, p. ej. `{ "group": "" }`), de modo que el
+ * service puede distinguir "campo ausente" (no tocar) de "campo vacío"
+ * (group -> cae al nombre; image -> se elimina).
+ */
+export const updateCategorySchema = z
+  .object({
+    name: categoryNameSchema.optional(),
+    group: categoryGroupSchema.optional(),
+    image: categoryImageSchema.optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for update",
+  });

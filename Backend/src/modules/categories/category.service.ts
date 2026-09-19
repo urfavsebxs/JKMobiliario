@@ -8,6 +8,12 @@ interface CreateCategoryDTO {
   image?: string;
 }
 
+interface UpdateCategoryDTO {
+  name?: string;
+  group?: string;
+  image?: string;
+}
+
 interface DefaultCategory {
   name: string;
   group: string;
@@ -223,10 +229,114 @@ export const createCategory = async (data: CreateCategoryDTO): Promise<ICategory
 };
 
 /**
+ * Actualiza una categoría existente (nombre, grupo e imagen).
+ *
+ * - `name`: si cambia, recalcula la `key` normalizada; si otra categoría ya
+ *   usa esa key => 409. Además sincroniza en cascada TODOS los productos que
+ *   usaban el nombre anterior (comparación normalizada) y devuelve cuántos
+ *   se actualizaron.
+ * - `group`: si el campo viene vacío/espacios cae al nombre resultante;
+ *   si está ausente, conserva el grupo actual.
+ * - `image`: si el campo viene vacío ("") se elimina; si está ausente, se
+ *   conserva. (El schema conserva la clave aunque su valor quede undefined.)
+ */
+export const updateCategory = async (
+  id: string,
+  data: UpdateCategoryDTO
+): Promise<{ categoria: ICategory; productosActualizados: number }> => {
+  const category = await Category.findById(id);
+  if (!category) {
+    throw createAppError("Categoría no encontrada", 404);
+  }
+
+  const hasGroup = Object.prototype.hasOwnProperty.call(data, "group");
+  const hasImage = Object.prototype.hasOwnProperty.call(data, "image");
+  const nombreAnterior = category.name;
+  const nuevoNombre = data.name?.trim();
+
+  if (nuevoNombre !== undefined) {
+    if (!nuevoNombre) {
+      throw createAppError("El nombre es obligatorio", 400);
+    }
+    // Defensa en profundidad: el schema Zod ya rechaza este valor con 400.
+    if (nuevoNombre.toLowerCase() === RESERVED_CATEGORY_NAME) {
+      throw createAppError("Nombre de categoría reservado", 400);
+    }
+
+    const nuevaKey = normalizarNombre(nuevoNombre);
+    // Colisión con otra categoría (excluyéndose a sí misma) => 409 controlado.
+    const existente = await Category.findOne({
+      key: nuevaKey,
+      _id: { $ne: category._id },
+    }).lean();
+    if (existente) {
+      throw createAppError("Ya existe una categoría con ese nombre", 409);
+    }
+
+    category.name = nuevoNombre;
+    category.key = nuevaKey;
+  }
+
+  const nombreFinal = category.name;
+
+  // `group` presente y vacío cae al nombre resultante.
+  if (hasGroup) {
+    category.group = data.group?.trim() || nombreFinal;
+  }
+
+  // `image` presente y vacía elimina la imagen (Mongoose hace $unset al
+  // guardar un path asignado a undefined). El schema Zod ya normaliza "" a
+  // undefined; se repite aquí para tolerar llamadas directas al service.
+  if (hasImage) {
+    category.image = data.image?.trim() || undefined;
+  }
+
+  try {
+    await category.save();
+  } catch (error) {
+    // Violación del índice único por una creación concurrente con la misma key.
+    if (isDuplicateKeyError(error)) {
+      throw createAppError("Ya existe una categoría con ese nombre", 409);
+    }
+    throw error;
+  }
+
+  // Cascada de productos: se ejecuta después de persistir la categoría para
+  // no reescribir productos si el guardado falla (p. ej. 409 por carrera).
+  // El nombre anterior se normaliza para cubrir variantes ("Sofas Modernos"
+  // o "sofas-modernos" cuando la categoría era "Sofás Modernos").
+  let productosActualizados = 0;
+  if (nuevoNombre !== undefined && nuevoNombre !== nombreAnterior) {
+    const variantes = await variantesDeCategoria(nombreAnterior);
+    if (variantes.length > 0) {
+      const resultado = await Product.updateMany(
+        { category: { $in: variantes } },
+        { $set: { category: nombreFinal } }
+      );
+      productosActualizados = resultado.modifiedCount;
+    }
+  }
+
+  return { categoria: category, productosActualizados };
+};
+
+/**
+ * Devuelve los valores reales de `Product.category` que coinciden con
+ * `nombre` al normalizar (sin acentos, mayúsculas, guiones ni espacios de
+ * más). `category` es un string libre en Product (default "general").
+ */
+const variantesDeCategoria = async (nombre: string): Promise<string[]> => {
+  const normalizada = normalizarNombre(nombre);
+  return (await Product.distinct("category")).filter(
+    (valor): valor is string =>
+      typeof valor === "string" && normalizarNombre(valor) === normalizada
+  );
+};
+
+/**
  * Elimina una categoría por id.
  * - No existe => 404.
- * - Hay productos que la usan (comparación normalizada: sin acentos,
- *   mayúsculas, guiones ni espacios de más) => 409.
+ * - Hay productos que la usan (comparación normalizada) => 409.
  * - En caso contrario, elimina y devuelve el nombre.
  */
 export const deleteCategory = async (id: string): Promise<string> => {
@@ -235,15 +345,7 @@ export const deleteCategory = async (id: string): Promise<string> => {
     throw createAppError("Categoría no encontrada", 404);
   }
 
-  // `category` es un string libre en Product (default "general"): se listan
-  // los valores reales y se comparan normalizados para detectar variantes
-  // como "Sofas Modernos" o "sofas-modernos" cuando la categoría es
-  // "Sofás Modernos". El conteo solo se ejecuta si hay variantes.
-  const normalizada = normalizarNombre(category.name);
-  const variantes = (await Product.distinct("category")).filter(
-    (valor): valor is string =>
-      typeof valor === "string" && normalizarNombre(valor) === normalizada
-  );
+  const variantes = await variantesDeCategoria(category.name);
   const productsInUse =
     variantes.length > 0 ? await Product.countDocuments({ category: { $in: variantes } }) : 0;
 

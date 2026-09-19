@@ -27,6 +27,7 @@ const routes: RouteConfig[] = [
 
   { method: "GET", path: "/api/categories", access: "public" },
   { method: "POST", path: "/api/categories", access: "admin" },
+  { method: "PUT", path: "/api/categories/:id", access: "admin" },
   { method: "DELETE", path: "/api/categories/:id", access: "admin" },
 ];
 
