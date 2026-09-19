@@ -1,0 +1,198 @@
+---
+export const prerender = false;
+
+import Layout from "../layouts/Layout.astro";
+
+// Mismo patrón que el footer: si no hay número configurado, se cae al bloque de
+// contacto de la home.
+const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
+const waHref = whatsapp ? `https://wa.me/${whatsapp}` : "/#contacto";
+
+const direccion =
+  "Carrera 52 #7 Sur-22, Mall Providencia, Avenida Guayabal, Medellín (Antioquia), Colombia";
+const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+
+// Enlaces del cuerpo: mismo subrayado dorado en toda la página.
+const enlace = "font-medium text-jk-gold-deep underline underline-offset-4 transition-colors hover:text-jk-ink";
+---
+
+<Layout title="Política de Privacidad" bodyClass="bg-jk-surface text-jk-ink">
+  <article class="mx-auto max-w-[900px] px-5 py-16">
+    <header>
+      <p class="font-brand text-[18px] font-medium tracking-[-0.25px] text-jk-gold-deep">
+        JK Mobiliario
+      </p>
+      <h1 class="mt-2 font-display text-[52px] leading-[1.05] text-jk-ink lg:text-[64px]">
+        Política de Privacidad
+      </h1>
+      <span class="mt-4 block h-px w-[120px] bg-jk-gold" aria-hidden="true"></span>
+      <p class="mt-4 font-sans text-[15px] font-medium text-jk-gold-deep">
+        Última actualización: septiembre de 2026
+      </p>
+      <p class="mt-6 font-sans text-[16px] leading-[1.7] text-jk-ink">
+        En JK Mobiliario respetamos su privacidad. Esta política describe qué datos personales
+        tratamos, con qué finalidad y cómo puede ejercer sus derechos como titular, de acuerdo con
+        la Ley 1581 de 2012 y el Decreto 1377 de 2013 de Colombia.
+      </p>
+    </header>
+
+    <div class="mt-12 space-y-12">
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">01</span>
+          Responsable del tratamiento
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          El responsable del tratamiento de sus datos personales es
+          <strong>JK Mobiliario S.A.S.</strong>, con domicilio en {direccion}.
+        </p>
+        <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Canal de atención para asuntos de privacidad: el
+          <a
+            href={waHref}
+            target={whatsapp ? "_blank" : undefined}
+            rel={whatsapp ? "noopener noreferrer" : undefined}
+            class={enlace}>WhatsApp de atención</a
+          >
+          y la dirección física del showroom (
+          <a
+            href={mapsHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            class={enlace}>ver ubicación en Google Maps</a
+          >).
+        </p>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">02</span>
+          Datos que tratamos
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          JK Mobiliario trata únicamente los datos que usted comparte de forma voluntaria:
+        </p>
+        <ul class="mt-3 list-disc space-y-2 pl-6 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          <li>
+            Los datos que nos comparte al contactarnos por WhatsApp: nombre, número de teléfono y el
+            contenido de sus mensajes.
+          </li>
+          <li>Los mensajes que escribe en el Asistente IA disponible en este sitio.</li>
+        </ul>
+        <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          No solicitamos datos sensibles ni información financiera a través de estos canales.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">03</span>
+          Finalidad
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Los datos se usan para atender sus solicitudes, elaborar cotizaciones y brindarle asesoría
+          comercial sobre mobiliario. <strong>No vendemos ni cedemos sus datos a terceros con fines
+          publicitarios.</strong>
+        </p>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">04</span>
+          Asistente IA
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Los mensajes que escribe en el chat del Asistente IA se procesan con un proveedor externo
+          de inteligencia artificial (Google) <strong>únicamente para generar la respuesta</strong>.
+        </p>
+        <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Por tratarse de un servicio automatizado, le recomendamos no compartir datos sensibles
+          (documentos de identidad, información financiera o de salud, contraseñas, entre otros) en
+          el chat.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">05</span>
+          WhatsApp
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Al usar los enlaces de WhatsApp de este sitio, el tratamiento de los datos se rige también
+          por las políticas de privacidad de WhatsApp/Meta, que son ajenas a JK Mobiliario. Le
+          recomendamos revisarlas antes de escribirnos por ese canal.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">06</span>
+          Almacenamiento en el navegador
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <ul class="mt-4 list-disc space-y-2 pl-6 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          <li>
+            El <strong>token de sesión</strong> del panel administrativo se guarda en
+            <code class="rounded bg-jk-cream px-1.5 py-0.5 font-sans text-[15px]">localStorage</code>
+            y se elimina al cerrar sesión.
+          </li>
+          <li>
+            El <strong>historial del Asistente IA</strong> se guarda en
+            <code class="rounded bg-jk-cream px-1.5 py-0.5 font-sans text-[15px]">sessionStorage</code>
+            y <strong>se borra al cerrar la pestaña</strong>.
+          </li>
+          <li>No usamos cookies de publicidad ni herramientas de seguimiento con fines comerciales.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">07</span>
+          Derechos del titular
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          De acuerdo con la Ley 1581 de 2012 y el Decreto 1377 de 2013, usted tiene derecho a
+          <strong>conocer, actualizar, rectificar y suprimir</strong> sus datos personales, así como
+          a solicitar prueba de la autorización otorgada y presentar quejas ante la Superintendencia
+          de Industria y Comercio.
+        </p>
+        <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Puede ejercer estos derechos escribiéndonos por el
+          <a
+            href={waHref}
+            target={whatsapp ? "_blank" : undefined}
+            rel={whatsapp ? "noopener noreferrer" : undefined}
+            class={enlace}>WhatsApp de atención</a
+          >
+          o visitándonos en la dirección física del showroom: {direccion}.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="flex items-baseline gap-3 font-sans text-[22px] font-semibold text-jk-ink">
+          <span class="font-display text-[28px] text-jk-gold-deep" aria-hidden="true">08</span>
+          Vigencia y cambios
+        </h2>
+        <span class="mt-2 block h-px w-[79px] bg-jk-gold" aria-hidden="true"></span>
+        <p class="mt-4 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Esta política rige desde su publicación. <strong>Última actualización: septiembre de
+          2026.</strong> Cualquier cambio se publicará en esta misma página.
+        </p>
+      </section>
+    </div>
+
+    <p class="mt-14 border-t border-jk-gold/60 pt-6">
+      <a
+        href="/"
+        class="font-sans text-[14px] font-medium text-jk-gold-deep underline underline-offset-4 transition-colors hover:text-jk-ink"
+        >← Volver al inicio</a
+      >
+    </p>
+  </article>
+</Layout>
