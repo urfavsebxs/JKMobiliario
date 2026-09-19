@@ -16,13 +16,52 @@ interface Props {
   product?: any;
 }
 
+/** Convierte una dimensión a cm: los valores ≤ 20 se asumen en metros (×100). */
+const aCentimetros = (valor: number): number => (valor > 0 && valor <= 20 ? valor * 100 : valor);
+
+/** Etiquetas de las casillas de dimensiones, en el orden del payload. */
+const CAMPOS_DIMENSION: Array<{ campo: "ancho" | "largo" | "alto"; etiqueta: string }> = [
+  { campo: "ancho", etiqueta: "Ancho (cm)" },
+  { campo: "largo", etiqueta: "Largo (cm)" },
+  { campo: "alto", etiqueta: "Alto (cm)" },
+];
+
+/**
+ * Prellena las casillas Ancho/Largo/Alto a partir del string `dimensions`
+ * guardado. Se toma el primer segmento (dividido por "·", "|", ";" o saltos de
+ * línea) con marca de par ("x"/"X"/"×") y sus tres primeros números, igual que
+ * el filtro del catálogo. Los textos legacy sin marca de par (p. ej.
+ * "4, 6 u 8 asientos") dejan las casillas vacías y se conservan al guardar.
+ */
+function parsearDimensiones(dimensions?: string): { ancho: string; largo: string; alto: string } {
+  const vacio = { ancho: "", largo: "", alto: "" };
+  if (!dimensions) return vacio;
+
+  for (const segmento of dimensions.split(/[·|;\n\r]+/)) {
+    if (!/[x×]/i.test(segmento)) continue;
+
+    const numeros = (segmento.match(/\d+(?:[.,]\d+)?/g) ?? []).map((numero) =>
+      Number(numero.replace(",", "."))
+    );
+    if (numeros.length === 0) continue;
+
+    const [ancho = "", largo = "", alto = ""] = numeros
+      .slice(0, 3)
+      .map((valor) => String(aCentimetros(valor)));
+
+    return { ancho, largo, alto };
+  }
+
+  return vacio;
+}
+
 export default function ProductForm({ productId, product }: Props) {
   const [formData, setFormData] = useState({
     name: product?.name || "",
     description: product?.description || "",
-    dimensions: product?.dimensions || "",
-    price: product?.price || 0,
-    stock: product?.stock || 0,
+    // Los numéricos viven como texto para poder quedar vacíos mientras se edita.
+    price: product?.price != null ? String(product.price) : "",
+    stock: product?.stock != null ? String(product.stock) : "",
     category: product?.category || "",
   });
 
@@ -36,9 +75,10 @@ export default function ProductForm({ productId, product }: Props) {
   const [variants, setVariants] = useState<any[]>(product?.variants || []);
   const [newVariant, setNewVariant] = useState({ size: "", color: "", colorHex: "", stock: 0, price: 0 });
 
-  const [discountPercent, setDiscountPercent] = useState<number>(
-    descuentoAplicable(product?.discountPercent)
+  const [discountPercent, setDiscountPercent] = useState<string>(
+    product?.discountPercent != null ? String(descuentoAplicable(product.discountPercent)) : ""
   );
+  const [dimensiones, setDimensiones] = useState(() => parsearDimensiones(product?.dimensions));
   const [medidasBase, setMedidasBase] = useState({
     ancho: product?.medidasBase?.ancho?.toString() ?? "",
     largo: product?.medidasBase?.largo?.toString() ?? "",
@@ -176,10 +216,12 @@ export default function ProductForm({ productId, product }: Props) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "price" || name === "stock" ? Number(value) : value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDimensionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setDimensiones((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleMedidaBaseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -330,6 +372,40 @@ export default function ProductForm({ productId, product }: Props) {
       return;
     }
 
+    // El precio es obligatorio y debe ser mayor que 0.
+    const precioTexto = formData.price.trim();
+    const precio = Number(precioTexto);
+    if (precioTexto === "" || !Number.isFinite(precio) || precio <= 0) {
+      setError("El precio debe ser mayor que 0.");
+      return;
+    }
+
+    // El stock vacío cuenta como 0; si viene, debe ser un entero ≥ 0.
+    const stockTexto = formData.stock.trim();
+    const stock = stockTexto === "" ? 0 : Number(stockTexto);
+    if (!Number.isInteger(stock) || stock < 0) {
+      setError("El stock debe ser un número entero mayor o igual a 0.");
+      return;
+    }
+
+    const descuento = descuentoAplicable(Number(discountPercent) || 0);
+
+    // Al menos una casilla de dimensiones; si las tres quedan vacías al editar
+    // se conserva el string original (p. ej. "4, 6 u 8 asientos").
+    const medidasEscritas = (["ancho", "largo", "alto"] as const)
+      .map((eje) => dimensiones[eje].trim())
+      .filter((valor) => valor !== "");
+
+    if (medidasEscritas.length === 0 && !productId) {
+      setError("Completa al menos una medida.");
+      return;
+    }
+
+    const dimensions =
+      medidasEscritas.length > 0
+        ? medidasEscritas.map((valor) => `${valor}cm`).join(" x ")
+        : (product?.dimensions ?? "").trim();
+
     setLoading(true);
     setError("");
 
@@ -352,14 +428,14 @@ export default function ProductForm({ productId, product }: Props) {
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        dimensions: formData.dimensions.trim(),
-        price: formData.price,
-        stock: formData.stock,
+        dimensions,
+        price: precio,
+        stock,
         category: formData.category.trim(),
         sizes,
         colors,
         variants,
-        discountPercent: descuentoAplicable(discountPercent),
+        discountPercent: descuento,
         ...(Object.keys(medidasPayload).length > 0 ? { medidasBase: medidasPayload } : {}),
       };
 
@@ -475,6 +551,10 @@ export default function ProductForm({ productId, product }: Props) {
     }
   };
 
+  // Vista previa del descuento con lo que hay escrito (aún sin validar).
+  const precioVista = Number(formData.price) || 0;
+  const descuentoVista = descuentoAplicable(Number(discountPercent) || 0);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -508,18 +588,38 @@ export default function ProductForm({ productId, product }: Props) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Dimensiones</label>
-          <input
-            type="text"
-            name="dimensions"
-            value={formData.dimensions}
-            onChange={handleInputChange}
-            required
-            placeholder="240cm x 90cm x 85cm"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
-          />
-        </div>
+        <fieldset className="md:col-span-2">
+          <legend className="block text-sm font-medium text-gray-700 mb-1">
+            Dimensiones (cm)
+          </legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {CAMPOS_DIMENSION.map(({ campo, etiqueta }) => (
+              <div key={campo}>
+                <label
+                  htmlFor={`dimension-${campo}`}
+                  className="block text-xs font-medium text-gray-700 mb-1"
+                >
+                  {etiqueta}
+                </label>
+                <input
+                  id={`dimension-${campo}`}
+                  type="number"
+                  name={campo}
+                  min="0"
+                  step="0.1"
+                  inputMode="decimal"
+                  placeholder="cm"
+                  value={dimensiones[campo]}
+                  onChange={handleDimensionChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Ancho × largo × alto. Completa al menos una casilla.
+          </p>
+        </fieldset>
 
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -642,9 +742,20 @@ export default function ProductForm({ productId, product }: Props) {
             name="price"
             value={formData.price}
             onChange={handleInputChange}
-            required
-            min="0"
-            step="1"
+            onInvalid={(e) => {
+              // Sin `required`: el vacío llega a nuestro submit. Si el navegador
+              // bloquea por estar por debajo del mínimo, mostramos el mensaje
+              // en español en lugar del tooltip nativo.
+              const input = e.currentTarget;
+              if (input.validity.valueMissing || input.validity.rangeUnderflow) {
+                e.preventDefault();
+                setError("El precio debe ser mayor que 0.");
+              }
+            }}
+            min="0.01"
+            step="0.01"
+            inputMode="decimal"
+            placeholder="Ej: 899990"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
         </div>
@@ -659,18 +770,20 @@ export default function ProductForm({ productId, product }: Props) {
             min="0"
             max="100"
             step="1"
+            inputMode="numeric"
             value={discountPercent}
-            onChange={(e) => setDiscountPercent(descuentoAplicable(Number(e.target.value)))}
+            onChange={(e) => setDiscountPercent(e.target.value)}
+            placeholder="0"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
           <p className="mt-1 text-xs text-gray-500">
-            {descuentoAplicable(discountPercent) > 0 ? (
+            {descuentoVista > 0 ? (
               <>
                 Precio final:{" "}
                 <span className="font-medium text-gray-900">
-                  {formatPrice(precioConDescuento(formData.price, discountPercent))}
+                  {formatPrice(precioConDescuento(precioVista, descuentoVista))}
                 </span>{" "}
-                <span className="line-through">{formatPrice(formData.price)}</span>
+                <span className="line-through">{formatPrice(precioVista)}</span>
               </>
             ) : (
               "0 % = sin descuento"
@@ -685,8 +798,17 @@ export default function ProductForm({ productId, product }: Props) {
             name="stock"
             value={formData.stock}
             onChange={handleInputChange}
-            required
+            onInvalid={(e) => {
+              const input = e.currentTarget;
+              if (input.validity.rangeUnderflow || input.validity.stepMismatch) {
+                e.preventDefault();
+                setError("El stock debe ser un número entero mayor o igual a 0.");
+              }
+            }}
             min="0"
+            step="1"
+            inputMode="numeric"
+            placeholder="0"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
         </div>
@@ -732,7 +854,11 @@ export default function ProductForm({ productId, product }: Props) {
 
       {/* Sizes */}
       <div className="border-t pt-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Medidas</h3>
+        <h3 className="text-lg font-medium text-gray-900">Medidas disponibles (variantes)</h3>
+        <p className="mt-1 mb-4 text-xs text-gray-500">
+          Tamaños en los que se fabrica el producto; se muestran en la ficha y alimentan el filtro
+          de medidas del catálogo.
+        </p>
         <div className="flex gap-2 mb-3">
           <input
             type="text"
