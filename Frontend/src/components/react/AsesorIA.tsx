@@ -27,12 +27,12 @@ const TIMEOUT_CLIENTE_MS = 30_000;
 const BIENVENIDA: Mensaje = {
   rol: "asesor",
   texto:
-    "Hola, soy el Asesor IA de JK Mobiliario. Cuéntame qué mueble necesitas: te ayudo con modelos, medidas, colores y cómo cotizar.",
+    "Hola, soy el Asesor IA de JK Mobiliario. Cuéntame qué mueble necesitas: te ayudo con modelos, precios, medidas, colores y cómo cotizar.",
 };
 
 const SUGERENCIAS = [
-  "Quiero una cama a medida",
-  "¿Qué colores puedo elegir?",
+  "¿Qué camas tienen y cuánto cuestan?",
+  "¿Qué medidas y colores manejan?",
   "¿Cómo pido una cotización?",
 ] as const;
 
@@ -82,6 +82,25 @@ function IconoChat() {
     >
       <path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.2A8 8 0 1 1 21 12Z" />
       <path d="M8.5 12h.01M12 12h.01M15.5 12h.01" />
+    </svg>
+  );
+}
+
+function IconoWhatsApp() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z" />
+      <path d="M8.8 9.2c0 3.3 2.7 6 6 6l1.2-1.7-2-.8-.8.9a4.6 4.6 0 0 1-2.3-2.3l.9-.8-.8-2-1.7 1.2Z" />
     </svg>
   );
 }
@@ -459,6 +478,18 @@ export default function AsesorIA() {
               }}
               className="border-t border-jk-gold/30 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
             >
+              {/* CTA permanente: la cotización final siempre se cierra con un
+                  asesor humano, esté o no disponible la IA. */}
+              <a
+                href={urlWhatsApp("Hola, quiero cotizar un mueble.")}
+                target={whatsapp ? "_blank" : undefined}
+                rel={whatsapp ? "noopener noreferrer" : undefined}
+                className="mb-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-jk-gold/50 bg-jk-gold/10 px-3 font-label text-[14px] font-medium text-jk-gold transition-colors hover:bg-jk-gold/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jk-gold"
+              >
+                <IconoWhatsApp />
+                Cotizar por WhatsApp
+              </a>
+
               <div className="flex items-end gap-2 rounded-xl border border-jk-gold/40 bg-white/5 p-1.5 focus-within:border-jk-gold">
                 <label htmlFor="jk-asesor-entrada" className="sr-only">
                   Escribe tu mensaje para el asesor
