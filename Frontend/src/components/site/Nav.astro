@@ -117,7 +117,7 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
                 <div class="bg-black/80">
                   <div
                     class:list={[
-                      "mx-auto max-w-[1440px] px-5 pt-16 pb-12 lg:px-[166px] lg:pb-[57px]",
+                      "jk-cat-panel-inner mx-auto max-w-[1440px] px-5 pt-16 pb-12 lg:px-[166px] lg:pb-[57px]",
                       // El contenido arranca justo en el borde inferior de la
                       // cabecera: así ningún enlace queda bajo la capa que la
                       // cabecera pinta por encima del panel y todos son
@@ -349,6 +349,64 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
   .jk-header-solid:has(.jk-cat-group:not([data-escaping]):hover) .jk-nav-ink,
   .jk-header-solid:has(.jk-cat-group:not([data-escaping]):focus-within) .jk-nav-ink {
     color: #fff;
+  }
+
+  /* --------------------------------------------------------------------------
+     Cabecera fija al hacer scroll
+     - El script alterna `data-fija` en el <header> a partir de los 80px.
+     - En modo "solid" el header vive en el flujo normal, así que al pasar a
+       `fixed` se reserva su altura en <main> para que el contenido no dé un
+       salto (mismo alto que ocupaba: 76px móvil / 150px escritorio).
+     - La altura se compacta a 64px (móvil) / 72px (escritorio) con transición.
+     - Sobre el fondo negro la tinta pasa a blanco también en modo "solid".
+     -------------------------------------------------------------------------- */
+  .jk-header[data-fija] {
+    position: fixed;
+    background-color: rgb(0 0 0 / 0.9);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .jk-header > div {
+    transition:
+      height 250ms ease,
+      padding 250ms ease;
+  }
+
+  .jk-header[data-fija] > div {
+    height: 64px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .jk-header[data-fija] .jk-nav-ink,
+  .jk-header[data-fija] .jk-burger {
+    color: #fff;
+  }
+
+  .jk-header-solid[data-fija] + main {
+    padding-top: 76px;
+  }
+
+  @media (min-width: 64rem) {
+    .jk-header[data-fija] > div {
+      height: 72px;
+    }
+
+    /* El desplegable arranca justo bajo la cabecera compacta */
+    .jk-header[data-fija] .jk-cat-panel-inner {
+      padding-top: 72px;
+    }
+
+    .jk-header-solid[data-fija] + main {
+      padding-top: 150px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .jk-header > div {
+      transition: none;
+    }
   }
 </style>
 
@@ -634,4 +692,24 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
       enlace.focus();
     });
   });
+
+  // --- Cabecera fija al hacer scroll ---
+  // Solo alterna `data-fija` en el <header> (umbral de 80px), con listener
+  // pasivo y sin re-render: el estado se cachea para no tocar el DOM en cada
+  // evento. Todo vive en el script de cliente, nunca en el frontmatter.
+  if (header) {
+    const UMBRAL_FIJO = 80;
+    let fija = false;
+
+    const aplicarCabecera = () => {
+      const debeFijarse = window.scrollY > UMBRAL_FIJO;
+      if (debeFijarse === fija) return;
+      fija = debeFijarse;
+      if (fija) header.setAttribute("data-fija", "");
+      else header.removeAttribute("data-fija");
+    };
+
+    window.addEventListener("scroll", aplicarCabecera, { passive: true });
+    aplicarCabecera();
+  }
 </script>

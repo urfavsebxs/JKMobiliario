@@ -29,6 +29,8 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Los anclajes (#nosotros, #contacto) no quedan bajo la cabecera fija */
+    scroll-padding-top: 96px;
   }
 
   body {

@@ -6,6 +6,7 @@ import FiltrosCatalogo from "../../components/site/FiltrosCatalogo.astro";
 import PanelCategorias from "../../components/site/PanelCategorias.astro";
 import ProductGrid from "../../components/ProductGrid.astro";
 import { getAllProducts } from "../../lib/api";
+import { CATEGORIAS_POR_DEFECTO, normalizarCategoria } from "../../lib/categorias";
 import {
   cumpleMedidas,
   normalizarLimitesMedidas,
@@ -38,28 +39,43 @@ try {
   productos = [];
 }
 
-/**
- * Normaliza el texto de categorías para que el slug de la URL coincida con el
- * dato guardado: minúsculas, sin acentos y guiones convertidos en espacios
- * ("centros-de-tv" → "centros de tv", "Sofás" → "sofas").
- */
-const normalizar = (texto: string) =>
-  texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+// `normalizarCategoria` (lib compartida) hace que el slug de la URL coincida
+// con el dato guardado aunque la BD use acentos, guiones o mayúsculas.
+const categoriaNormalizada = normalizarCategoria(categoria);
 
-const categoriaNormalizada = normalizar(categoria);
+/**
+ * "Otros" funciona como cajón: además de los productos con categoría "Otros",
+ * incluye los que no encajan en ninguna de las categorías predeterminadas.
+ */
+const CATEGORIAS_PREDEFINIDAS = new Set(
+  CATEGORIAS_POR_DEFECTO.map((predefinida) => normalizarCategoria(predefinida.name))
+);
+const esCajonOtros = categoriaNormalizada === "otros";
 
 const filtrados = productos.filter((p) => {
-  if (!normalizar(p.category ?? "").includes(categoriaNormalizada)) return false;
+  const categoriaProducto = normalizarCategoria(p.category ?? "");
+
+  if (esCajonOtros) {
+    if (categoriaProducto !== "otros" && CATEGORIAS_PREDEFINIDAS.has(categoriaProducto)) {
+      return false;
+    }
+  } else if (!categoriaProducto.includes(categoriaNormalizada)) {
+    return false;
+  }
 
   if (busqueda) {
-    const texto = `${p.name} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
-    if (!texto.includes(busqueda.toLowerCase())) return false;
+    // Normaliza ambos lados (sin acentos, mayúsculas ni guiones) e indexa
+    // también sizes/dimensions para poder buscar por medidas ("1.90").
+    const texto = normalizarCategoria(
+      [
+        p.name,
+        p.description ?? "",
+        p.category ?? "",
+        (p.sizes ?? []).join(" "),
+        p.dimensions ?? "",
+      ].join(" ")
+    );
+    if (!texto.includes(normalizarCategoria(busqueda))) return false;
   }
 
   if (!cumpleMedidas(p, limites)) return false;
