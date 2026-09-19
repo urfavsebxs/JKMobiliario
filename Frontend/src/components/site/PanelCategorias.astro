@@ -40,54 +40,32 @@ const enlaceOff = "text-white/70 hover:text-white";
   class="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:flex lg:flex-row lg:gap-x-[24px]"
 >
   {
-    grupos.map((grupo) => {
-      // "Comedores" es a la vez área y categoría: el título hace de enlace para
-      // no repetir el mismo texto dos veces en la misma columna.
-      const tituloEsEnlace =
-        grupo.categorias.length === 1 &&
-        normalizarCategoria(grupo.categorias[0].nombre) === normalizarCategoria(grupo.titulo);
-      const unica = grupo.categorias[0];
+    // Todas las columnas comparten la misma estructura: título como texto y la
+    // lista siempre debajo, aunque el grupo tenga una sola categoría
+    // ("Comedores" u "Otros" también muestran su enlace).
+    grupos.map((grupo) => (
+      <div class="min-w-0 lg:flex-1">
+        <p class={tituloBase}>{grupo.titulo}</p>
 
-      return (
-        <div class="min-w-0 lg:flex-1">
-          {tituloEsEnlace ? (
-            <a
-              href={`/catalogo/${unica.slug}`}
-              aria-current={esActiva(unica.slug) ? "page" : undefined}
-              class:list={[
-                tituloBase,
-                "inline-block transition-colors",
-                esActiva(unica.slug) ? enlaceOn : "hover:text-jk-gold",
-              ]}
-            >
-              {grupo.titulo}
-            </a>
-          ) : (
-            <p class={tituloBase}>{grupo.titulo}</p>
-          )}
+        <span class="mt-[10px] block h-px w-[79px] bg-jk-gold/85" aria-hidden="true" />
 
-          <span class="mt-[10px] block h-px w-[79px] bg-jk-gold/85" aria-hidden="true" />
-
-          {!tituloEsEnlace && (
-            <ul class="mt-[6px]">
-              {grupo.categorias.map((categoria) => (
-                <li>
-                  <a
-                    href={`/catalogo/${categoria.slug}`}
-                    aria-current={esActiva(categoria.slug) ? "page" : undefined}
-                    class:list={[
-                      enlaceBase,
-                      esActiva(categoria.slug) ? enlaceOn : enlaceOff,
-                    ]}
-                  >
-                    {categoria.nombre}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      );
-    })
+        <ul class="mt-[6px]">
+          {grupo.categorias.map((categoria) => (
+            <li>
+              <a
+                href={`/catalogo/${categoria.slug}`}
+                aria-current={esActiva(categoria.slug) ? "page" : undefined}
+                class:list={[
+                  enlaceBase,
+                  esActiva(categoria.slug) ? enlaceOn : enlaceOff,
+                ]}
+              >
+                {categoria.nombre}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
   }
 </nav>
