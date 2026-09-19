@@ -27,71 +27,95 @@ const coloresRestantes = colores.slice(MAX_COLORES_VISIBLES);
 const nombresColores = colores.map((color) => color.name).join(", ");
 ---
 
-<a href={`/products/${product._id}`} class="group block">
-  <div class="aspect-[369/491] overflow-hidden rounded-[4px] border border-jk-gold bg-jk-mist">
-    {
-      imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={product.name}
-          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-        />
-      ) : null
-    }
-  </div>
-  <div class="mt-2 flex items-start justify-between gap-3">
-    <h2 class="font-sans text-[16px] font-medium text-jk-ink">{product.name}</h2>
-    {
-      tieneDescuento ? (
-        <span class="flex shrink-0 flex-col items-end">
-          <span class="font-sans text-[16px] font-semibold text-jk-gold-deep">
-            {precioFinalTexto}
-          </span>
-          <span class="mt-0.5 flex items-center gap-1.5">
-            <span class="font-sans text-[13px] text-jk-gold-muted line-through">
-              <span class="sr-only">Precio original: </span>
-              {precioTexto(product.price)}
+<div class="group relative">
+  <a href={`/products/${product._id}`} class="block">
+    <div class="aspect-[369/491] overflow-hidden rounded-[4px] border border-jk-gold bg-jk-mist">
+      {
+        imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={product.name}
+            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : null
+      }
+    </div>
+    <div class="mt-2 flex items-start justify-between gap-3">
+      <h2 class="font-sans text-[16px] font-medium text-jk-ink">{product.name}</h2>
+      {
+        tieneDescuento ? (
+          <span class="flex shrink-0 flex-col items-end">
+            <span class="font-sans text-[16px] font-semibold text-jk-gold-deep">
+              {precioFinalTexto}
             </span>
-            <span class="rounded-full bg-jk-gold-deep px-1.5 py-0.5 font-sans text-[11px] font-semibold leading-none text-white">
-              <span class="sr-only">Descuento del </span>-{descuento} %
+            <span class="mt-0.5 flex items-center gap-1.5">
+              <span class="font-sans text-[13px] text-jk-gold-muted line-through">
+                <span class="sr-only">Precio original: </span>
+                {precioTexto(product.price)}
+              </span>
+              <span class="rounded-full bg-jk-gold-deep px-1.5 py-0.5 font-sans text-[11px] font-semibold leading-none text-white">
+                <span class="sr-only">Descuento del </span>-{descuento} %
+              </span>
             </span>
           </span>
-        </span>
-      ) : (
-        <span class="shrink-0 font-sans text-[16px] font-medium text-jk-ink">
-          {precioTexto(product.price)}
-        </span>
+        ) : (
+          <span class="shrink-0 font-sans text-[16px] font-medium text-jk-ink">
+            {precioTexto(product.price)}
+          </span>
+        )
+      }
+    </div>
+    {
+      colores.length > 0 && (
+        <ul
+          class="mt-1.5 flex items-center gap-1.5"
+          aria-label={`Colores disponibles: ${nombresColores}`}
+        >
+          {coloresVisibles.map((color) => (
+            <li
+              class="h-4 w-4 shrink-0 rounded-full border border-jk-mist"
+              style={`background-color: ${color.hex}`}
+              title={color.name}
+            >
+              <span class="sr-only">{color.name}</span>
+            </li>
+          ))}
+          {coloresRestantes.length > 0 && (
+            <li
+              class="flex h-4 items-center font-sans text-[12px] leading-none text-jk-gold-muted"
+              title={`También en: ${coloresRestantes.map((color) => color.name).join(", ")}`}
+            >
+              <span aria-hidden="true">+{coloresRestantes.length}</span>
+              <span class="sr-only">
+                {` y ${coloresRestantes.length} ${coloresRestantes.length === 1 ? "color más" : "colores más"}: ${coloresRestantes.map((color) => color.name).join(", ")}`}
+              </span>
+            </li>
+          )}
+        </ul>
       )
     }
-  </div>
-  {
-    colores.length > 0 && (
-      <ul
-        class="mt-1.5 flex items-center gap-1.5"
-        aria-label={`Colores disponibles: ${nombresColores}`}
-      >
-        {coloresVisibles.map((color) => (
-          <li
-            class="h-4 w-4 shrink-0 rounded-full border border-jk-mist"
-            style={`background-color: ${color.hex}`}
-            title={color.name}
-          >
-            <span class="sr-only">{color.name}</span>
-          </li>
-        ))}
-        {coloresRestantes.length > 0 && (
-          <li
-            class="flex h-4 items-center font-sans text-[12px] leading-none text-jk-gold-muted"
-            title={`También en: ${coloresRestantes.map((color) => color.name).join(", ")}`}
-          >
-            <span aria-hidden="true">+{coloresRestantes.length}</span>
-            <span class="sr-only">
-              {` y ${coloresRestantes.length} ${coloresRestantes.length === 1 ? "color más" : "colores más"}: ${coloresRestantes.map((color) => color.name).join(", ")}`}
-            </span>
-          </li>
-        )}
-      </ul>
-    )
-  }
-</a>
+  </a>
+
+  <!-- Botón rápido: agrega sin variante; el widget del carrito lee el dataset -->
+  <button
+    type="button"
+    data-agregar-carrito
+    data-product-id={product._id}
+    data-nombre={product.name}
+    data-categoria={product.category}
+    data-precio={precioFinal > 0 ? String(precioFinal) : ""}
+    data-imagen={imageUrl}
+    aria-label={`Agregar ${product.name} al carrito`}
+    class="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-jk-gold bg-black/70 text-white backdrop-blur-sm transition-colors hover:bg-jk-gold hover:text-jk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jk-gold"
+  >
+    <span
+      data-jk-carrito-label
+      data-agregado="✓"
+      aria-hidden="true"
+      class="text-[20px] leading-none"
+    >
+      +
+    </span>
+  </button>
+</div>

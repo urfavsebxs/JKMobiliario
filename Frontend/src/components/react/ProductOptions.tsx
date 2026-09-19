@@ -3,6 +3,7 @@ import { useStore } from "@nanostores/react";
 import type { Product, ProductVariant } from "../../lib/types";
 import { colorMueble, setColorMueble } from "../../lib/colorMueble";
 import { fijarMedidas, medidasMueble } from "../../lib/medidasMueble";
+import { proxyImageUrl } from "../../lib/images";
 import { descuentoAplicable, formatPrice, precioConDescuento, precioTexto } from "../../lib/precio";
 
 interface ProductOptionsProps {
@@ -122,6 +123,23 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
     : varianteMasBarata
       ? product.price
       : null;
+
+  // ─── Datos para el carrito (los lee el widget desde `data-*`) ─────
+  const colorCarrito = colorElegido?.nombre ?? selectedColor;
+  const colorHexCarrito =
+    colorElegido?.hex ??
+    product.colors.find((color) => color.name === selectedColor)?.hex ??
+    "";
+
+  const partesMedida: string[] = [];
+  if (customWidth.trim()) partesMedida.push(`Ancho ${customWidth.trim()} cm`);
+  if (customDepth.trim()) partesMedida.push(`Largo ${customDepth.trim()} cm`);
+  if (customHeight.trim()) partesMedida.push(`Alto ${customHeight.trim()} cm`);
+  const medidaCarrito = isCustomSize
+    ? partesMedida.join(" · ") || "A medida"
+    : selectedSize || "";
+
+  const precioCarrito = precioFinal > 0 ? String(precioFinal) : "";
 
   /**
    * Construye el mensaje de WhatsApp con las especificaciones del producto
@@ -411,6 +429,38 @@ export default function ProductOptions({ product }: ProductOptionsProps) {
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jk-gold-deep focus:border-jk-gold-deep resize-none"
         />
       </div>
+
+      {/* Agregar al carrito: el widget lee la variante elegida del dataset */}
+      <button
+        type="button"
+        data-agregar-carrito
+        data-product-id={product._id}
+        data-nombre={product.name}
+        data-categoria={product.category}
+        data-medida={medidaCarrito}
+        data-color={colorCarrito}
+        data-colorhex={colorHexCarrito}
+        data-precio={precioCarrito}
+        data-imagen={proxyImageUrl(product.images[0])}
+        className="w-full flex items-center justify-center gap-2 bg-jk-gold text-jk-ink py-3 px-6 rounded-lg font-medium hover:opacity-90 active:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-jk-gold-deep focus-visible:ring-offset-2"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-5 h-5"
+          aria-hidden="true"
+        >
+          <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 8H6" />
+          <circle cx="9.5" cy="20" r="1.4" />
+          <circle cx="17.5" cy="20" r="1.4" />
+        </svg>
+        <span data-jk-carrito-label>Agregar al carrito</span>
+      </button>
 
       {/* Botón de WhatsApp */}
       <button

@@ -2,6 +2,7 @@
 import Nav from "../components/site/Nav.astro";
 import Footer from "../components/site/Footer.astro";
 import AsesorIA from "../components/react/AsesorIA.tsx";
+import CarritoUI from "../components/react/CarritoUI.tsx";
 import "../styles/global.css";
 
 interface Props {
@@ -43,7 +44,8 @@ const {
     </main>
     <Footer />
 
-    <!-- Asesor IA: isla diferida para no afectar los Core Web Vitals. -->
+    <!-- Asesor IA y carrito: islas diferidas para no afectar los Core Web Vitals. -->
     <AsesorIA client:idle />
+    <CarritoUI client:idle />
   </body>
 </html>
