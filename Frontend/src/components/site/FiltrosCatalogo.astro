@@ -1,6 +1,5 @@
 ---
 interface Props {
-  categoria?: string;
   busqueda?: string;
   anchoMin?: string;
   anchoMax?: string;
@@ -9,15 +8,12 @@ interface Props {
 }
 
 const {
-  categoria = "",
   busqueda = "",
   anchoMin = "",
   anchoMax = "",
   largoMin = "",
   largoMax = "",
 } = Astro.props;
-
-const categorias = ["TODO", "DISPONIBLE", "COTIZACIÓN", "DE FABRICA", "COLECCIÓN"];
 
 /** Campos de medida del formulario: etiqueta y valores para los inputs. */
 const gruposMedida = [
@@ -31,17 +27,9 @@ const inputMedida =
 const chipBase =
   "inline-flex h-[32px] items-center justify-center rounded-[10px] px-[11px] font-brand text-[16px] font-medium transition-colors";
 const chipOn = "bg-jk-gold-soft text-white";
-const chipOff = "border border-jk-gold text-jk-ink hover:bg-jk-gold/15";
-
-const activa = categoria.toUpperCase() || "TODO";
 ---
 
 <form method="GET" class="pt-[23px]">
-  {
-    /* Conserva la categoría de la franja al buscar o filtrar por medidas. */
-    categoria && <input type="hidden" name="categoria" value={categoria} />
-  }
-
   <label
     class="flex h-[42px] w-full items-center gap-[10px] rounded-[18px] border border-jk-gold bg-white pl-[18px] lg:w-[606px]"
   >
@@ -65,20 +53,7 @@ const activa = categoria.toUpperCase() || "TODO";
     />
   </label>
 
-  <div class="mt-[7px] flex flex-wrap gap-[10px]">
-    {
-      categorias.map((nombre) => (
-        <a
-          href={`/catalogo?categoria=${encodeURIComponent(nombre)}`}
-          class:list={[chipBase, activa === nombre ? chipOn : chipOff]}
-        >
-          {nombre}
-        </a>
-      ))
-    }
-  </div>
-
-  <div class="mt-[48px]">
+  <div class="mt-[40px]">
     <p class="font-sans text-[15px] font-light text-jk-gold-muted">MEDIDAS</p>
     <span class="block h-px w-[184px] bg-jk-gold"></span>
   </div>
