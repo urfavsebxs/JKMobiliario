@@ -1,0 +1,127 @@
+---
+interface Props {
+  /** Página actual, ya acotada entre 1 y `totalPaginas`. */
+  pagina: number;
+  totalPaginas: number;
+  /** Total de productos tras aplicar los filtros. */
+  total: number;
+  /** Primer y último producto visibles de la página (1-based, inclusive). */
+  desde: number;
+  hasta: number;
+  /** Ruta base sin query: "/catalogo" o "/catalogo/<slug>". */
+  ruta: string;
+  /** Filtros a preservar en los enlaces (`q`, medidas…); nunca `pagina`. */
+  parametros?: Record<string, string>;
+}
+
+const { pagina, totalPaginas, total, desde, hasta, ruta, parametros = {} } = Astro.props;
+
+/** Enlace SSR que conserva los filtros y fija la página (la 1 se omite). */
+const hrefPagina = (numero: number): string => {
+  const params = new URLSearchParams(parametros);
+  params.delete("pagina");
+  if (numero > 1) params.set("pagina", String(numero));
+  const query = params.toString();
+  return query ? `${ruta}?${query}` : ruta;
+};
+
+/**
+ * Ventana de páginas: con pocas páginas se muestran todas; con muchas, la
+ * primera, la última y ±2 alrededor de la actual, con elipsis en los saltos.
+ */
+const paginasVisibles = (): Array<number | "…"> => {
+  if (totalPaginas <= 7) {
+    return Array.from({ length: totalPaginas }, (_, indice) => indice + 1);
+  }
+
+  const visibles = new Set<number>([1, totalPaginas, pagina]);
+  for (let delta = 1; delta <= 2; delta++) {
+    if (pagina - delta >= 1) visibles.add(pagina - delta);
+    if (pagina + delta <= totalPaginas) visibles.add(pagina + delta);
+  }
+
+  const ordenadas = [...visibles].sort((a, b) => a - b);
+  const resultado: Array<number | "…"> = [];
+  let anterior = 0;
+
+  for (const numero of ordenadas) {
+    if (anterior && numero - anterior > 1) resultado.push("…");
+    resultado.push(numero);
+    anterior = numero;
+  }
+
+  return resultado;
+};
+
+const paginas = paginasVisibles();
+
+const controlBase =
+  "flex h-11 min-w-[44px] items-center justify-center rounded-[10px] px-3 font-brand text-[16px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jk-gold";
+const controlActivo = "bg-jk-gold-soft text-white";
+const controlInactivo = "border border-jk-gold text-jk-ink hover:bg-jk-gold/15";
+const controlDeshabilitado = "border border-jk-mist text-jk-gold-muted";
+---
+
+{
+  total > 0 && (
+    <div class="mt-12">
+      <p class="text-center font-sans text-[15px] text-jk-gold-muted" role="status">
+        Mostrando {desde}–{hasta} de {total} productos
+      </p>
+
+      {totalPaginas > 1 && (
+        <nav
+          aria-label="Paginación de productos"
+          class="mt-4 flex flex-wrap items-center justify-center gap-2"
+        >
+          {pagina > 1 ? (
+            <a href={hrefPagina(pagina - 1)} rel="prev" class:list={[controlBase, controlInactivo]}>
+              Anterior
+            </a>
+          ) : (
+            <span class:list={[controlBase, controlDeshabilitado]} aria-disabled="true">
+              Anterior
+            </span>
+          )}
+
+          {paginas.map((numero) =>
+            numero === "…" ? (
+              <span
+                class="flex h-11 min-w-[44px] items-center justify-center px-1 font-sans text-[16px] text-jk-gold-muted"
+                aria-hidden="true"
+              >
+                …
+              </span>
+            ) : numero === pagina ? (
+              <a
+                href={hrefPagina(numero)}
+                aria-current="page"
+                class:list={[controlBase, controlActivo]}
+              >
+                {numero}
+              </a>
+            ) : (
+              <a
+                href={hrefPagina(numero)}
+                aria-label={`Página ${numero}`}
+                class:list={[controlBase, controlInactivo]}
+              >
+                {numero}
+              </a>
+            )
+          )}
+
+          {pagina < totalPaginas ? (
+            <a href={hrefPagina(pagina + 1)} rel="next" class:list={[controlBase, controlInactivo]}>
+              Siguiente
+            </a>
+          ) : (
+            <span class:list={[controlBase, controlDeshabilitado]} aria-disabled="true">
+              Siguiente
+            </span>
+          )}
+        </nav>
+      )}
+    </div>
+  )
+}

@@ -3,6 +3,7 @@ export const prerender = false;
 
 import Layout from "../../layouts/Layout.astro";
 import FiltrosCatalogo from "../../components/site/FiltrosCatalogo.astro";
+import Paginacion from "../../components/site/Paginacion.astro";
 import PanelCategorias from "../../components/site/PanelCategorias.astro";
 import ProductGrid from "../../components/ProductGrid.astro";
 import { getAllProducts } from "../../lib/api";
@@ -87,6 +88,32 @@ const filtrados = productos.filter((p) => {
 // haya límites informados y la lista quede vacía).
 const sinResultadosMedidas = filtrados.length === 0 && tieneLimitesMedidas(limites);
 
+// ─── Paginación ──────────────────────────────────────────────────────
+/** Productos por página del catálogo. */
+const PAGE_SIZE = 12;
+
+const totalFiltrados = filtrados.length;
+const totalPaginas = Math.max(1, Math.ceil(totalFiltrados / PAGE_SIZE));
+
+// Página fuera de rango o inválida: se ajusta a 1 o a la última sin errores.
+const paginaSolicitada = numeroDeParametro(Astro.url.searchParams.get("pagina"));
+const pagina = Math.min(
+  Math.max(1, paginaSolicitada === null ? 1 : Math.floor(paginaSolicitada)),
+  totalPaginas
+);
+
+const productosPagina = filtrados.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE);
+const desde = totalFiltrados === 0 ? 0 : (pagina - 1) * PAGE_SIZE + 1;
+const hasta = Math.min(pagina * PAGE_SIZE, totalFiltrados);
+
+// Filtros activos para los enlaces del paginador (la categoría va en la ruta).
+const parametrosPaginacion: Record<string, string> = {};
+if (busqueda) parametrosPaginacion.q = busqueda;
+if (anchoMin) parametrosPaginacion.anchoMin = anchoMin;
+if (anchoMax) parametrosPaginacion.anchoMax = anchoMax;
+if (largoMin) parametrosPaginacion.largoMin = largoMin;
+if (largoMax) parametrosPaginacion.largoMax = largoMax;
+
 const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 const waMedidasHref = whatsapp
   ? `https://wa.me/${whatsapp}?text=${encodeURIComponent("Hola, busco un producto con medidas específicas.")}`
@@ -136,7 +163,17 @@ const waMedidasHref = whatsapp
         </div>
       )}
 
-      <ProductGrid products={filtrados} />
+      <ProductGrid products={productosPagina} />
+
+      <Paginacion
+        pagina={pagina}
+        totalPaginas={totalPaginas}
+        total={totalFiltrados}
+        desde={desde}
+        hasta={hasta}
+        ruta={Astro.url.pathname}
+        parametros={parametrosPaginacion}
+      />
     </div>
   </div>
 </Layout>
