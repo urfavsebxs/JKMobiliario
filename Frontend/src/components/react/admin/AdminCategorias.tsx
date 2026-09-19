@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { compararCategorias } from "../../../lib/categorias";
 import type { Category } from "../../../lib/types";
 import { adminFetch, ErrorApi, mensajeError } from "./adminApi";
 
 type Aviso = { tipo: "ok" | "error"; texto: string };
+
+/** Datos del formulario de edición inline. */
+interface EdicionCategoria {
+  id: string;
+  nombre: string;
+  grupo: string;
+  imagen: string;
+}
 
 /**
  * Panel de gestión de categorías del catálogo.
@@ -24,6 +32,24 @@ export default function AdminCategorias() {
 
   /** id de categoría → true mientras su DELETE está en curso. */
   const [eliminando, setEliminando] = useState<Record<string, boolean>>({});
+
+  // Edición inline (formulario encima de la tabla)
+  const [edicion, setEdicion] = useState<EdicionCategoria | null>(null);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
+  const nombreEdicionRef = useRef<HTMLInputElement>(null);
+  const focoEdicionRef = useRef<HTMLElement | null>(null);
+  const idEdicion = edicion?.id ?? null;
+
+  // Foco al abrir la edición (solo al cambiar de fila, no en cada tecla).
+  useEffect(() => {
+    if (idEdicion) nombreEdicionRef.current?.focus();
+  }, [idEdicion]);
+
+  /** Devuelve el foco al botón "Editar" de la fila al cerrar el formulario. */
+  const devolverFocoEdicion = () => {
+    window.requestAnimationFrame(() => focoEdicionRef.current?.focus?.());
+  };
 
   const grupos = useMemo(
     () =>
@@ -88,6 +114,78 @@ export default function AdminCategorias() {
       setAviso({ tipo: "error", texto: mensajeError(error, "Error al crear la categoría") });
     } finally {
       setCreando(false);
+    }
+  };
+
+  const abrirEdicion = (categoria: Category, origen?: HTMLElement | null) => {
+    focoEdicionRef.current = origen ?? null;
+    setEdicion({
+      id: categoria._id,
+      nombre: categoria.name,
+      grupo: categoria.group,
+      imagen: categoria.image ?? "",
+    });
+    setErrorEdicion(null);
+    setAviso(null);
+  };
+
+  const cancelarEdicion = () => {
+    setEdicion(null);
+    setErrorEdicion(null);
+    devolverFocoEdicion();
+  };
+
+  const guardarEdicion = async (evento: React.FormEvent) => {
+    evento.preventDefault();
+    if (!edicion) return;
+
+    const nombreLimpio = edicion.nombre.trim();
+    if (!nombreLimpio) {
+      setErrorEdicion("Escribe un nombre para la categoría.");
+      return;
+    }
+
+    setGuardandoEdicion(true);
+    setErrorEdicion(null);
+    setAviso(null);
+
+    try {
+      const respuesta = await adminFetch<{
+        categoria: Category;
+        productosActualizados: number;
+      }>(`/api/categories/${edicion.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: nombreLimpio,
+          group: edicion.grupo.trim() || nombreLimpio,
+          image: edicion.imagen.trim() || undefined,
+        }),
+      });
+
+      const actualizada = respuesta.categoria;
+      setCategorias((prev) =>
+        prev
+          .map((categoria) =>
+            categoria._id === actualizada._id ? actualizada : categoria
+          )
+          .sort(compararCategorias)
+      );
+      setEdicion(null);
+      devolverFocoEdicion();
+
+      const productos = respuesta.productosActualizados ?? 0;
+      setAviso({
+        tipo: "ok",
+        texto:
+          productos > 0
+            ? `Categoría «${actualizada.name}» actualizada. Se actualizaron ${productos} producto(s).`
+            : `Categoría «${actualizada.name}» actualizada.`,
+      });
+    } catch (error) {
+      // 409 (nombre duplicado) y 400 (validación): mensaje del backend.
+      setErrorEdicion(mensajeError(error, "Error al actualizar la categoría"));
+    } finally {
+      setGuardandoEdicion(false);
     }
   };
 
@@ -219,6 +317,121 @@ export default function AdminCategorias() {
         </button>
       </form>
 
+      {/* Edición */}
+      {edicion && (
+        <form
+          onSubmit={guardarEdicion}
+          aria-labelledby="edicion-titulo"
+          className="rounded-lg border-2 border-jk-gold/60 bg-white p-4 shadow sm:p-6"
+        >
+          <h2 id="edicion-titulo" className="text-lg font-semibold text-gray-900">
+            Editar categoría
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Los productos con esta categoría se actualizarán automáticamente.
+          </p>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div>
+              <label
+                htmlFor="edicion-nombre"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Nombre
+              </label>
+              <input
+                id="edicion-nombre"
+                ref={nombreEdicionRef}
+                type="text"
+                required
+                value={edicion.nombre}
+                onChange={(evento) => {
+                  const valor = evento.target.value;
+                  setEdicion((prev) => (prev ? { ...prev, nombre: valor } : prev));
+                  if (errorEdicion) setErrorEdicion(null);
+                }}
+                disabled={guardandoEdicion}
+                aria-invalid={Boolean(errorEdicion)}
+                aria-describedby={errorEdicion ? "edicion-error" : undefined}
+                placeholder="Ej: Bibliotecas"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-gray-900 disabled:opacity-60"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="edicion-grupo"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Grupo (opcional)
+              </label>
+              <input
+                id="edicion-grupo"
+                type="text"
+                list="categoria-grupos"
+                value={edicion.grupo}
+                onChange={(evento) => {
+                  const valor = evento.target.value;
+                  setEdicion((prev) => (prev ? { ...prev, grupo: valor } : prev));
+                }}
+                disabled={guardandoEdicion}
+                placeholder="Ej: Mesas"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-gray-900 disabled:opacity-60"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="edicion-imagen"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Imagen URL (opcional)
+              </label>
+              <input
+                id="edicion-imagen"
+                type="url"
+                value={edicion.imagen}
+                onChange={(evento) => {
+                  const valor = evento.target.value;
+                  setEdicion((prev) => (prev ? { ...prev, imagen: valor } : prev));
+                }}
+                disabled={guardandoEdicion}
+                placeholder="https://…"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-gray-900 disabled:opacity-60"
+              />
+            </div>
+          </div>
+
+          {errorEdicion && (
+            <p
+              id="edicion-error"
+              role="alert"
+              className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {errorEdicion}
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={guardandoEdicion}
+              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+            >
+              {guardandoEdicion ? "Guardando…" : "Guardar"}
+            </button>
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              disabled={guardandoEdicion}
+              className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
       {/* Listado */}
       {cargando ? (
         <div className="rounded-lg bg-white p-6 text-center shadow">
@@ -282,6 +495,15 @@ export default function AdminCategorias() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                      <button
+                        type="button"
+                        onClick={(evento) => abrirEdicion(categoria, evento.currentTarget)}
+                        aria-label={`Editar ${categoria.name}`}
+                        disabled={guardandoEdicion && idEdicion === categoria._id}
+                        className="mr-3 text-gray-900 transition-colors hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Editar
+                      </button>
                       <button
                         type="button"
                         onClick={() => void eliminar(categoria)}
