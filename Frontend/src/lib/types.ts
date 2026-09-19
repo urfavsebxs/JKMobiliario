@@ -47,6 +47,17 @@ export interface ProductsResponse {
   total: number;
 }
 
+/** Categoría administrable del catálogo (colección propia en el backend). */
+export interface Category {
+  _id: string;
+  name: string;
+  group: string;
+  order: number;
+  image?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   id: string;
   name: string;

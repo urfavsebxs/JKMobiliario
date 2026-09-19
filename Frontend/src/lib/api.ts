@@ -1,14 +1,25 @@
-import type { Product, ProductsResponse, AuthResponse } from "./types";
+import type { Category, Product, ProductsResponse, AuthResponse } from "./types";
 
 const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
 
+/** Tiempo máximo de espera de la API antes de abortar (ms). */
+const TIMEOUT_MS = 4000;
+
+/**
+ * Petición JSON con timeout por defecto. El llamador puede imponer su propio
+ * `signal`; si no lo hace, se aborta a los {@link TIMEOUT_MS} ms para que una
+ * respuesta colgada del backend no bloquee el render SSR.
+ */
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const { signal, ...resto } = options ?? {};
+
   const res = await fetch(`${API_URL}${path}`, {
+    ...resto,
     headers: {
       "Content-Type": "application/json",
-      ...options?.headers,
+      ...resto.headers,
     },
-    ...options,
+    signal: signal ?? AbortSignal.timeout(TIMEOUT_MS),
   });
 
   const data = await res.json();
@@ -61,6 +72,50 @@ export async function getAllProducts(): Promise<Product[]> {
 
 export async function getProductById(id: string): Promise<Product> {
   return request<Product>(`/api/products/${id}`);
+}
+
+/**
+ * Valida y normaliza un ítem de categoría venido de la API. Exige un `name`
+ * string no vacío y completa el resto de campos con valores seguros; devuelve
+ * `null` si el ítem no sirve.
+ */
+function categoriaValida(item: unknown): Category | null {
+  if (!item || typeof item !== "object") return null;
+
+  const bruto = item as Record<string, unknown>;
+  const name = typeof bruto.name === "string" ? bruto.name.trim() : "";
+  if (!name) return null;
+
+  const group =
+    typeof bruto.group === "string" && bruto.group.trim() ? bruto.group.trim() : name;
+  const order =
+    typeof bruto.order === "number" && Number.isFinite(bruto.order) ? bruto.order : 0;
+  const image =
+    typeof bruto.image === "string" && bruto.image.trim() ? bruto.image.trim() : undefined;
+  const _id = typeof bruto._id === "string" ? bruto._id : "";
+
+  return { _id, name, group, order, image };
+}
+
+/**
+ * Categorías del catálogo (endpoint público).
+ *
+ * Valida la forma de la respuesta y nunca lanza: ante error de red o datos que
+ * no sean un arreglo devuelve `[]`. Los ítems malformados (null, sin `name`…)
+ * se descartan para que `agruparCategorias` no pueda romper el SSR. Cada
+ * consumidor aplica después su respaldo local (`CATEGORIAS_POR_DEFECTO`).
+ */
+export async function getCategorias(): Promise<Category[]> {
+  try {
+    const data = await request<unknown>("/api/categories");
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .map(categoriaValida)
+      .filter((categoria): categoria is Category => categoria !== null);
+  } catch {
+    return [];
+  }
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {

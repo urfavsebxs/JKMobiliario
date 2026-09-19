@@ -1,4 +1,7 @@
 ---
+import { agruparCategorias, categoriasConRespaldo, normalizarCategoria, slugDeCategoria } from "../../lib/categorias";
+import { getCategorias } from "../../lib/api";
+
 interface Props {
   /** Slug de la categoría activa (el de la URL) para marcarla visualmente. */
   activa?: string;
@@ -6,61 +9,24 @@ interface Props {
 
 const { activa = "" } = Astro.props;
 
-/**
- * Normaliza igual que `catalogo/[categoria].astro`: minúsculas, sin acentos y
- * guiones convertidos en espacios, para comparar el slug de la URL con el
- * nombre de la categoría aunque la BD guarde "Sofás" o "sofas minimalistas".
- */
-const normalizar = (texto: string) =>
-  texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+// Caché por request: Nav renderiza este panel dos veces (escritorio y móvil)
+// y solo la primera petición consulta la API. Si falla o vuelve vacía se
+// aplica el respaldo local, de modo que nunca se pinta una lista vacía.
+const cats =
+  Astro.locals.categorias ?? (Astro.locals.categorias = categoriasConRespaldo(await getCategorias()));
 
-const activaNormalizada = normalizar(activa);
+const grupos = agruparCategorias(cats).map((grupo) => ({
+  titulo: grupo.titulo,
+  categorias: grupo.categorias.map((categoria) => ({
+    nombre: categoria.name,
+    slug: slugDeCategoria(categoria.name),
+  })),
+}));
 
-/** Las 10 categorías de los PDFs, agrupadas por área. */
-const grupos = [
-  {
-    titulo: "Camas",
-    categorias: [
-      { nombre: "Camas Minimalistas", slug: "camas-minimalistas" },
-      { nombre: "Camas Modernas", slug: "camas-modernas" },
-    ],
-  },
-  {
-    titulo: "Comedores",
-    categorias: [{ nombre: "Comedores", slug: "comedores" }],
-  },
-  {
-    titulo: "Mesas",
-    categorias: [
-      { nombre: "Mesas de Centro", slug: "mesas-de-centro" },
-      { nombre: "Mesas de Noche", slug: "mesas-de-noche" },
-    ],
-  },
-  {
-    titulo: "Sillas",
-    categorias: [
-      { nombre: "Sillas de Barra", slug: "sillas-de-barra" },
-      { nombre: "Sillas Minimalistas", slug: "sillas-minimalistas" },
-      { nombre: "Sillas Modernas", slug: "sillas-modernas" },
-    ],
-  },
-  {
-    titulo: "Sofás",
-    categorias: [
-      { nombre: "Sofás Minimalistas", slug: "sofas-minimalistas" },
-      { nombre: "Sofás Modernos", slug: "sofas-modernos" },
-    ],
-  },
-];
+const activaNormalizada = normalizarCategoria(activa);
 
 const esActiva = (slug: string) =>
-  activaNormalizada !== "" && normalizar(slug) === activaNormalizada;
+  activaNormalizada !== "" && normalizarCategoria(slug) === activaNormalizada;
 
 const tituloBase =
   "font-sans text-[20px] font-bold leading-[30px] text-white lg:text-[24px] lg:leading-[36px]";
@@ -79,7 +45,7 @@ const enlaceOff = "text-white/70 hover:text-white";
       // no repetir el mismo texto dos veces en la misma columna.
       const tituloEsEnlace =
         grupo.categorias.length === 1 &&
-        normalizar(grupo.categorias[0].nombre) === normalizar(grupo.titulo);
+        normalizarCategoria(grupo.categorias[0].nombre) === normalizarCategoria(grupo.titulo);
       const unica = grupo.categorias[0];
 
       return (

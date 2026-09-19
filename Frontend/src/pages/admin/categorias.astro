@@ -1,0 +1,47 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminCategorias from "../../components/react/admin/AdminCategorias";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+---
+
+<Layout title="Categorías" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-8">
+      <div>
+        <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">← Volver al panel</a>
+        <h1 class="text-2xl font-bold text-gray-900 mt-1">Categorías</h1>
+        <p class="text-gray-600">
+          Crea categorías nuevas y revisa cuáles tienen productos antes de eliminarlas.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <a
+          href="/admin/modelos"
+          class="bg-white border border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+        >
+          Modelos 3D
+        </a>
+        <a
+          href="/admin/descuentos"
+          class="bg-white border border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+        >
+          Descuentos
+        </a>
+        <a
+          href="/admin/products/new"
+          class="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+        >
+          + Nuevo Producto
+        </a>
+      </div>
+    </div>
+
+    <AdminCategorias client:load />
+  </div>
+</Layout>

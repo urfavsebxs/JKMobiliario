@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { API_URL } from "../../lib/apiBase";
+import {
+  CATEGORIAS_POR_DEFECTO,
+  compararCategorias,
+  normalizarCategoria,
+} from "../../lib/categorias";
+import type { CategoriaVista } from "../../lib/categorias";
 import { proxyImageUrl } from "../../lib/images";
 import { descuentoAplicable, formatPrice, precioConDescuento } from "../../lib/precio";
-import type { MedidasBase } from "../../lib/types";
+import type { Category, MedidasBase } from "../../lib/types";
+import { adminFetch, mensajeError } from "./admin/adminApi";
 
 interface Props {
   productId?: string;
@@ -46,7 +53,126 @@ export default function ProductForm({ productId, product }: Props) {
   const [uploadStatus, setUploadStatus] = useState("");
   const [error, setError] = useState("");
 
+  // ─── Categorías ─────────────────────────────────────────────────────
+  const [categorias, setCategorias] = useState<CategoriaVista[]>(CATEGORIAS_POR_DEFECTO);
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
+  const [nuevaCategoria, setNuevaCategoria] = useState({ nombre: "", grupo: "" });
+  const [creandoCategoriaAhora, setCreandoCategoriaAhora] = useState(false);
+  const [errorCategoria, setErrorCategoria] = useState("");
+
+  // Última categoría real elegida: permite volver a ella si se cancela la
+  // creación de una categoría nueva.
+  const categoriaAnterior = useRef(formData.category);
+
   const MODELO_MAX_MB = 25;
+
+  // El select de categoría comparte `handleInputChange` con el resto del
+  // formulario, así que el panel de "nueva categoría" se abre o cierra
+  // observando el valor elegido (`__nueva__` es una opción centinela).
+  useEffect(() => {
+    if (formData.category === "__nueva__") {
+      setCreandoCategoria(true);
+      setNuevaCategoria({ nombre: "", grupo: "" });
+      setErrorCategoria("");
+      return;
+    }
+
+    categoriaAnterior.current = formData.category;
+    setCreandoCategoria(false);
+  }, [formData.category]);
+
+  // Categorías desde la API pública. Si el endpoint aún no existe o falla la
+  // red, se conservan los valores por defecto sin mostrar ningún error.
+  useEffect(() => {
+    let activo = true;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/categories`);
+        if (!res.ok) return;
+
+        const json = await res.json();
+        if (activo && Array.isArray(json?.data)) {
+          setCategorias(json.data as CategoriaVista[]);
+        }
+      } catch {
+        // Silencio: la lista por defecto ya está disponible.
+      }
+    })();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  // Opciones del select ordenadas por order/nombre. Si el producto que se edita
+  // trae una categoría heredada fuera de la lista, se añade al final para no
+  // perderla al guardar.
+  const opcionesCategoria = useMemo(() => {
+    const lista = [...categorias];
+    const heredada = product?.category?.trim();
+
+    if (
+      heredada &&
+      !lista.some((c) => normalizarCategoria(c.name) === normalizarCategoria(heredada))
+    ) {
+      lista.push({ name: heredada, group: "", order: Number.MAX_SAFE_INTEGER });
+    }
+
+    return lista.sort(compararCategorias);
+  }, [categorias, product?.category]);
+
+  const gruposDisponibles = useMemo(
+    () =>
+      [...new Set(categorias.map((c) => c.group).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, "es")
+      ),
+    [categorias]
+  );
+
+  const crearCategoria = async () => {
+    const nombre = nuevaCategoria.nombre.trim();
+    const grupo = nuevaCategoria.grupo.trim();
+
+    if (!nombre) {
+      setErrorCategoria("Escribe un nombre para la categoría.");
+      return;
+    }
+
+    setCreandoCategoriaAhora(true);
+    setErrorCategoria("");
+
+    try {
+      const creada = await adminFetch<Category>("/api/categories", {
+        method: "POST",
+        body: JSON.stringify({ name: nombre, group: grupo || nombre }),
+      });
+
+      setCategorias((prev) => [...prev, creada]);
+      setFormData((prev) => ({ ...prev, category: creada.name }));
+      setNuevaCategoria({ nombre: "", grupo: "" });
+      setCreandoCategoria(false);
+    } catch (err) {
+      setErrorCategoria(mensajeError(err, "Error al crear la categoría"));
+    } finally {
+      setCreandoCategoriaAhora(false);
+    }
+  };
+
+  const cancelarCategoria = () => {
+    setFormData((prev) => ({ ...prev, category: categoriaAnterior.current }));
+    setNuevaCategoria({ nombre: "", grupo: "" });
+    setErrorCategoria("");
+    setCreandoCategoria(false);
+  };
+
+  // Enter dentro del panel crea la categoría en vez de enviar el formulario
+  // principal del producto.
+  const manejarEnterCategoria = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!creandoCategoriaAhora) void crearCategoria();
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -197,6 +323,13 @@ export default function ProductForm({ productId, product }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // El centinela de "crear nueva" nunca debe viajar como categoría real.
+    if (formData.category === "__nueva__") {
+      setError("Elige una categoría de la lista o termina de crearla antes de guardar.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -389,15 +522,115 @@ export default function ProductForm({ productId, product }: Props) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-          <input
-            type="text"
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            Categoría
+          </label>
+          <select
+            id="category"
             name="category"
+            required
             value={formData.category}
             onChange={handleInputChange}
-            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
-          />
+          >
+            <option value="" disabled>
+              Selecciona una categoría
+            </option>
+            {opcionesCategoria.map((categoria) => (
+              <option
+                key={categoria._id ?? normalizarCategoria(categoria.name)}
+                value={categoria.name}
+              >
+                {categoria.name}
+              </option>
+            ))}
+            <option value="__nueva__">+ Crear nueva categoría…</option>
+          </select>
+
+          {creandoCategoria && (
+            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-900">Nueva categoría</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Se creará en el catálogo y quedará seleccionada en este producto.
+              </p>
+
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label
+                    htmlFor="nueva-categoria-nombre"
+                    className="block text-xs font-medium text-gray-700 mb-1"
+                  >
+                    Nombre
+                  </label>
+                  <input
+                    id="nueva-categoria-nombre"
+                    type="text"
+                    required
+                    value={nuevaCategoria.nombre}
+                    onChange={(e) =>
+                      setNuevaCategoria((prev) => ({ ...prev, nombre: e.target.value }))
+                    }
+                    onKeyDown={manejarEnterCategoria}
+                    placeholder="Ej: Bibliotecas"
+                    aria-invalid={Boolean(errorCategoria)}
+                    aria-describedby={errorCategoria ? "nueva-categoria-error" : undefined}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="nueva-categoria-grupo"
+                    className="block text-xs font-medium text-gray-700 mb-1"
+                  >
+                    Grupo (opcional)
+                  </label>
+                  <input
+                    id="nueva-categoria-grupo"
+                    type="text"
+                    list="nueva-categoria-grupos"
+                    value={nuevaCategoria.grupo}
+                    onChange={(e) =>
+                      setNuevaCategoria((prev) => ({ ...prev, grupo: e.target.value }))
+                    }
+                    onKeyDown={manejarEnterCategoria}
+                    placeholder="Ej: Mesas"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  />
+                  <datalist id="nueva-categoria-grupos">
+                    {gruposDisponibles.map((grupo) => (
+                      <option key={grupo} value={grupo} />
+                    ))}
+                  </datalist>
+                </div>
+
+                {errorCategoria && (
+                  <p id="nueva-categoria-error" role="alert" className="text-xs text-red-600">
+                    {errorCategoria}
+                  </p>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void crearCategoria()}
+                    disabled={creandoCategoriaAhora}
+                    className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+                  >
+                    {creandoCategoriaAhora ? "Creando…" : "Crear"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelarCategoria}
+                    disabled={creandoCategoriaAhora}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
