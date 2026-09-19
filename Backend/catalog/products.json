@@ -2425,8 +2425,12 @@
       "image": "sofas-minimalistas/p02-1.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 2,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abe9-8697-74c1-818f-b4b24e61926e/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 142.6,
+        "alto": 42.4
+      }
     },
     {
       "id": "sofas-minimalistas-02",
@@ -2444,8 +2448,12 @@
       "image": "sofas-minimalistas/p02-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 2,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abe9-f45f-71c0-b035-e9655a583fdf/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 129.1,
+        "alto": 51.5
+      }
     },
     {
       "id": "sofas-minimalistas-03",
@@ -2486,8 +2494,12 @@
       "image": "sofas-minimalistas/p03-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 3,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0ac0a-dc1d-7552-a5a6-c16a58961ff5/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 67.1,
+        "alto": 43.4
+      }
     },
     {
       "id": "sofas-minimalistas-05",
@@ -2551,8 +2563,12 @@
       "image": "sofas-minimalistas/p05-1.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 5,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abef-0db1-7495-aa22-4af9eb4c2929/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 71.5,
+        "alto": 47.0
+      }
     },
     {
       "id": "sofas-minimalistas-08",
@@ -2570,8 +2586,12 @@
       "image": "sofas-minimalistas/p05-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 5,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0ac0f-9dc7-7136-98eb-c4ab1a85b0a2/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 76.6,
+        "alto": 62.7
+      }
     },
     {
       "id": "sofas-minimalistas-09",
@@ -2589,8 +2609,12 @@
       "image": "sofas-minimalistas/p06-1.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 6,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abf5-b550-7498-b418-cea5f26828ec/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.3,
+        "largo": 186.6,
+        "alto": 64.1
+      }
     },
     {
       "id": "sofas-minimalistas-10",
@@ -2608,8 +2632,12 @@
       "image": "sofas-minimalistas/p06-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 6,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abed-3fa6-709a-9fdb-2deb400c6272/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 189.0,
+        "alto": 47.1
+      }
     },
     {
       "id": "sofas-minimalistas-11",
@@ -2734,8 +2762,12 @@
       "image": "sofas-minimalistas/p09-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 9,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abfe-be1d-77ad-a7d3-69e212a63fec/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.3,
+        "largo": 85.4,
+        "alto": 45.6
+      }
     },
     {
       "id": "sofas-minimalistas-17",
@@ -2776,8 +2808,12 @@
       "image": "sofas-minimalistas/p10-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 10,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0ac14-7793-71be-af57-6abd99f7596a/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 68.1,
+        "alto": 34.6
+      }
     },
     {
       "id": "sofas-minimalistas-19",
@@ -2818,8 +2854,12 @@
       "image": "sofas-minimalistas/p11-2.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 11,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0abeb-fc72-74c7-bc31-dd606ada1cde/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 147.5,
+        "alto": 40.5
+      }
     },
     {
       "id": "sofas-minimalistas-21",
@@ -2951,8 +2991,12 @@
       "image": "sofas-minimalistas/p15-1.jpg",
       "pdf": "Catálogo sofás minimalistas .pdf",
       "page": 15,
-      "modelFile": null,
-      "medidasBase": null
+      "modelFile": "catalogo sofás minimalistas/01a0ac15-44cc-7107-934d-dad9a8a06dd2/Meshy_AI_model.glb",
+      "medidasBase": {
+        "ancho": 190.2,
+        "largo": 71.6,
+        "alto": 33.6
+      }
     },
     {
       "id": "sofas-minimalistas-28",
