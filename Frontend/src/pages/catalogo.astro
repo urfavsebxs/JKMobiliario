@@ -6,12 +6,30 @@ import FiltrosCatalogo from "../components/site/FiltrosCatalogo.astro";
 import PanelCategorias from "../components/site/PanelCategorias.astro";
 import ProductGrid from "../components/ProductGrid.astro";
 import { getAllProducts } from "../lib/api";
+import {
+  cumpleMedidas,
+  normalizarLimitesMedidas,
+  numeroDeParametro,
+  tieneLimitesMedidas,
+} from "../lib/medidasProducto";
 import type { Product } from "../lib/types";
 
 const categoria = (Astro.url.searchParams.get("categoria") || "").trim();
 const busqueda = (Astro.url.searchParams.get("q") || "").trim();
-const medidaMin = (Astro.url.searchParams.get("min") || "").trim();
-const medidaMax = (Astro.url.searchParams.get("max") || "").trim();
+
+// Filtro de medidas por ancho y largo (en cm); cada límite vacío se ignora.
+// `normalizarLimitesMedidas` descarta negativos e invierte rangos invertidos.
+const anchoMin = (Astro.url.searchParams.get("anchoMin") || "").trim();
+const anchoMax = (Astro.url.searchParams.get("anchoMax") || "").trim();
+const largoMin = (Astro.url.searchParams.get("largoMin") || "").trim();
+const largoMax = (Astro.url.searchParams.get("largoMax") || "").trim();
+
+const limites = normalizarLimitesMedidas({
+  anchoMin: numeroDeParametro(anchoMin),
+  anchoMax: numeroDeParametro(anchoMax),
+  largoMin: numeroDeParametro(largoMin),
+  largoMax: numeroDeParametro(largoMax),
+});
 
 let productos: Product[] = [];
 try {
@@ -19,15 +37,6 @@ try {
 } catch {
   productos = [];
 }
-
-const numerosDe = (p: Product) =>
-  [p.dimensions, ...p.sizes]
-    .join(" ")
-    .match(/\d+(?:[.,]\d+)?/g)
-    ?.map((n) => Number(n.replace(",", "."))) ?? [];
-
-const min = medidaMin ? Number(medidaMin) : null;
-const max = medidaMax ? Number(medidaMax) : null;
 
 const filtrados = productos.filter((p) => {
   const cat = categoria.toUpperCase();
@@ -44,16 +53,19 @@ const filtrados = productos.filter((p) => {
     if (!texto.includes(busqueda.toLowerCase())) return false;
   }
 
-  if (min !== null || max !== null) {
-    const medidas = numerosDe(p);
-    const dentro = medidas.some(
-      (n) => (min === null || n >= min) && (max === null || n <= max),
-    );
-    if (!dentro) return false;
-  }
+  if (!cumpleMedidas(p, limites)) return false;
 
   return true;
 });
+
+// Aviso de vacío por medidas (no se distingue de otros filtros: basta con que
+// haya límites informados y la lista quede vacía).
+const sinResultadosMedidas = filtrados.length === 0 && tieneLimitesMedidas(limites);
+
+const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
+const waMedidasHref = whatsapp
+  ? `https://wa.me/${whatsapp}?text=${encodeURIComponent("Hola, busco un producto con medidas específicas.")}`
+  : "/#contacto";
 ---
 
 <Layout
@@ -61,7 +73,7 @@ const filtrados = productos.filter((p) => {
   bodyClass="bg-jk-surface text-jk-ink"
   navMode="overlay"
 >
-  <!-- Cabecera oscura con las 10 categorías, igual que en cada página de categoría -->
+  <!-- Cabecera oscura con las categorías del catálogo, igual que en cada página de categoría -->
   <section class="relative overflow-hidden bg-black">
     <img
       src="/images/jk/hero.jpg"
@@ -80,11 +92,30 @@ const filtrados = productos.filter((p) => {
     <FiltrosCatalogo
       categoria={categoria}
       busqueda={busqueda}
-      medidaMin={medidaMin}
-      medidaMax={medidaMax}
+      anchoMin={anchoMin}
+      anchoMax={anchoMax}
+      largoMin={largoMin}
+      largoMax={largoMax}
     />
 
     <div class="mt-[72px]">
+      {sinResultadosMedidas && (
+        <div class="mb-10 rounded-[10px] border border-jk-gold bg-jk-cream px-5 py-4 font-sans text-[16px] leading-[1.5] text-jk-ink">
+          <p>
+            No encontramos productos con esas medidas publicadas. Muchos se
+            fabrican a la medida:
+            <a
+              href={waMedidasHref}
+              target={whatsapp ? "_blank" : undefined}
+              rel={whatsapp ? "noopener noreferrer" : undefined}
+              class="font-medium underline transition-opacity hover:opacity-70"
+            >
+              escríbenos por WhatsApp
+            </a>.
+          </p>
+        </div>
+      )}
+
       <ProductGrid products={filtrados} />
     </div>
   </div>

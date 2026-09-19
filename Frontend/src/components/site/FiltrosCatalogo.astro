@@ -2,13 +2,31 @@
 interface Props {
   categoria?: string;
   busqueda?: string;
-  medidaMin?: string;
-  medidaMax?: string;
+  anchoMin?: string;
+  anchoMax?: string;
+  largoMin?: string;
+  largoMax?: string;
 }
 
-const { categoria = "", busqueda = "", medidaMin = "", medidaMax = "" } = Astro.props;
+const {
+  categoria = "",
+  busqueda = "",
+  anchoMin = "",
+  anchoMax = "",
+  largoMin = "",
+  largoMax = "",
+} = Astro.props;
 
 const categorias = ["TODO", "DISPONIBLE", "COTIZACIÓN", "DE FABRICA", "COLECCIÓN"];
+
+/** Campos de medida del formulario: etiqueta y valores para los inputs. */
+const gruposMedida = [
+  { etiqueta: "ANCHO (cm)", nombreMin: "anchoMin", nombreMax: "anchoMax", valorMin: anchoMin, valorMax: anchoMax },
+  { etiqueta: "LARGO (cm)", nombreMin: "largoMin", nombreMax: "largoMax", valorMin: largoMin, valorMax: largoMax },
+];
+
+const inputMedida =
+  "h-[32px] w-[50px] rounded-[10px] border border-jk-gold bg-transparent px-[6px] text-center font-sans text-[14px] font-medium text-jk-ink outline-none placeholder:text-[#49454F]";
 
 const chipBase =
   "inline-flex h-[32px] items-center justify-center rounded-[10px] px-[11px] font-brand text-[16px] font-medium transition-colors";
@@ -60,23 +78,46 @@ const activa = categoria.toUpperCase() || "TODO";
     <span class="block h-px w-[184px] bg-jk-gold"></span>
   </div>
 
-  <div class="mt-[9px] flex flex-wrap items-center gap-[9px]">
-    <input
-      type="number"
-      name="min"
-      value={medidaMin}
-      placeholder="MIN"
-      min="0"
-      class="h-[32px] w-[50px] rounded-[10px] border border-jk-gold bg-transparent px-[6px] text-center font-sans text-[14px] font-medium text-jk-ink outline-none placeholder:text-[#49454F]"
-    />
-    <input
-      type="number"
-      name="max"
-      value={medidaMax}
-      placeholder="MAX"
-      min="0"
-      class="h-[32px] w-[53px] rounded-[10px] border border-jk-gold bg-transparent px-[6px] text-center font-sans text-[14px] font-medium text-jk-ink outline-none placeholder:text-[#49454F]"
-    />
+  <div class="mt-[9px] flex flex-wrap items-end gap-x-[24px] gap-y-[10px]">
+    {
+      gruposMedida.map(({ etiqueta, nombreMin, nombreMax, valorMin, valorMax }) => (
+        <div>
+          <p class="font-sans text-[13px] font-light text-jk-gold-muted">{etiqueta}</p>
+          <div class="mt-[4px] flex items-center gap-[9px]">
+            <label class="sr-only" for={nombreMin}>
+              {etiqueta} mínimo
+            </label>
+            <input
+              type="number"
+              id={nombreMin}
+              name={nombreMin}
+              value={valorMin}
+              placeholder="MIN"
+              min="0"
+              step="any"
+              class={inputMedida}
+            />
+            <span class="font-sans text-[14px] text-jk-gold-muted" aria-hidden="true">
+              –
+            </span>
+            <label class="sr-only" for={nombreMax}>
+              {etiqueta} máximo
+            </label>
+            <input
+              type="number"
+              id={nombreMax}
+              name={nombreMax}
+              value={valorMax}
+              placeholder="MAX"
+              min="0"
+              step="any"
+              class={inputMedida}
+            />
+          </div>
+        </div>
+      ))
+    }
+
     <button
       type="submit"
       class:list={[chipBase, "w-[33px] px-0", chipOn]}
