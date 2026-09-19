@@ -8,6 +8,7 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { accessControl } from "./middlewares/accessControl";
 import authRoutes from "./modules/auth/auth.routes";
 import productRoutes from "./modules/products/product.routes";
+import categoryRoutes from "./modules/categories/category.routes";
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use(accessControl);
 // ─── Routes ──────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // ─── Global error handler (must be last) ─────────────────────────────
 app.use(errorHandler);

@@ -24,6 +24,10 @@ const routes: RouteConfig[] = [
   { method: "DELETE", path: "/api/products/:id/model", access: "admin" },
   { method: "PATCH", path: "/api/products/:id/discount", access: "admin" },
   { method: "PATCH", path: "/api/products/:id/medidas", access: "admin" },
+
+  { method: "GET", path: "/api/categories", access: "public" },
+  { method: "POST", path: "/api/categories", access: "admin" },
+  { method: "DELETE", path: "/api/categories/:id", access: "admin" },
 ];
 
 const matchRoute = (configPath: string, requestPath: string): boolean => {

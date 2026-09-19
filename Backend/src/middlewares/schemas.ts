@@ -154,3 +154,43 @@ export const removeImageQuerySchema = z.object({
     .min(1, "imageUrl query parameter is required")
     .url("imageUrl must be a valid URL"),
 });
+
+// ─── Categories ──────────────────────────────────────────────────────
+
+/**
+ * Centinela del select de categorías del frontend (`ProductForm.tsx`):
+ * nunca puede ser una categoría real.
+ */
+const RESERVED_CATEGORY_NAME = "__nueva__";
+
+/**
+ * POST /api/categories body.
+ * - `name` rechaza el centinela `__nueva__` que usa el select del frontend.
+ * - `group` opcional: "" o "   " se normalizan a undefined y el service cae
+ *   al `name`; se recorta y se rechaza por encima de 100 caracteres.
+ * - `image` admite cadena vacía (se normaliza a undefined); si viene, debe
+ *   ser una URL http(s) de hasta 2048 caracteres.
+ */
+export const createCategorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(100)
+    .refine((v) => v.toLowerCase() !== RESERVED_CATEGORY_NAME, {
+      message: "Nombre de categoría reservado",
+    }),
+  group: z
+    .string()
+    .trim()
+    .max(100)
+    .transform((v) => v || undefined)
+    .optional(),
+  image: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine((v) => v === "" || /^https?:\/\//.test(v), { message: "image must be an http(s) URL" })
+    .transform((v) => v || undefined)
+    .optional(),
+});
