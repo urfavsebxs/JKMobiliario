@@ -11,11 +11,18 @@ interface Props {
 
 const { product, volver } = Astro.props;
 
-// Enlace a la ficha: si viene `volver`, se adjunta para que el botón de
-// regreso devuelva al usuario al punto exacto del catálogo.
-const hrefProducto = volver
-  ? `/products/${product._id}?volver=${encodeURIComponent(volver)}`
-  : `/products/${product._id}`;
+// Enlace a la ficha: si viene `volver`, se adjunta la ruta del catálogo con un
+// `destacar` para que al regresar quede a la vista esta tarjeta. Se limpia un
+// `destacar` previo para no acumularlo al navegar entre productos.
+let hrefProducto = `/products/${product._id}`;
+
+if (volver) {
+  const urlVolver = new URL(volver, "http://localhost");
+  urlVolver.searchParams.delete("destacar");
+  urlVolver.searchParams.set("destacar", product._id);
+  const volverConDestacar = `${urlVolver.pathname}${urlVolver.search}`;
+  hrefProducto += `?volver=${encodeURIComponent(volverConDestacar)}`;
+}
 
 const imageUrl = proxyImageUrl(product.images[0]);
 const descuento = descuentoAplicable(product.discountPercent);
@@ -35,7 +42,7 @@ const coloresRestantes = colores.slice(MAX_COLORES_VISIBLES);
 const nombresColores = colores.map((color) => color.name).join(", ");
 ---
 
-<div class="group relative">
+<div id={`producto-${product._id}`} class="group relative scroll-mt-28">
   <a href={hrefProducto} class="block">
     <div class="aspect-[369/491] overflow-hidden rounded-[4px] border border-jk-gold bg-jk-mist">
       {
@@ -127,3 +134,14 @@ const nombresColores = colores.map((color) => color.name).join(", ");
     </span>
   </button>
 </div>
+
+<style>
+  /* Resaltado temporal de la tarjeta al volver de la ficha (lo activa el
+     script del catálogo). El outline añade una pista visible que no depende
+     solo del color y no provoca saltos de layout. */
+  .jk-producto-destacado {
+    outline: 3px solid var(--color-jk-gold);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+</style>

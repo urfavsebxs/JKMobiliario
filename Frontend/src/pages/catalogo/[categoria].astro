@@ -121,6 +121,10 @@ if (largoMax) parametrosPaginacion.largoMax = largoMax;
 // botón "volver" de la ficha del producto regrese al mismo punto.
 const volver = Astro.url.pathname + Astro.url.search;
 
+// Producto a resaltar al volver de su ficha (ObjectId de 24 hex).
+const destacarParam = (Astro.url.searchParams.get("destacar") ?? "").trim();
+const destacar = /^[a-f\d]{24}$/i.test(destacarParam) ? destacarParam : "";
+
 const whatsapp = import.meta.env.PUBLIC_WHATSAPP_NUMBER || "";
 const waMedidasHref = whatsapp
   ? `https://wa.me/${whatsapp}?text=${encodeURIComponent("Hola, busco un producto con medidas específicas.")}`
@@ -200,4 +204,22 @@ const waMedidasHref = whatsapp
       />
     </div>
   </div>
+
+  <script define:vars={{ destacar }}>
+    // Al volver de la ficha, deja a la vista la tarjeta exacta y la resalta
+    // un momento. Sin movimiento reducido no hay animación de scroll; el
+    // resaltado es un outline estático (no depende solo del color) que se
+    // retira a los 2 s. No mueve el foco del teclado.
+    if (destacar) {
+      const tarjeta = document.getElementById(`producto-${destacar}`);
+      if (tarjeta) {
+        const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.requestAnimationFrame(() => {
+          tarjeta.scrollIntoView({ block: "center", behavior: reducido ? "auto" : "smooth" });
+          tarjeta.classList.add("jk-producto-destacado");
+          window.setTimeout(() => tarjeta.classList.remove("jk-producto-destacado"), 2000);
+        });
+      }
+    }
+  </script>
 </Layout>
