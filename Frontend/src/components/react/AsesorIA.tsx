@@ -56,8 +56,8 @@ function esMensaje(valor: unknown): valor is Mensaje {
 /**
  * Gemini a veces devuelve Markdown (p. ej. **301 517 9340**). El panel muestra
  * texto plano, así que se limpian los marcadores más comunes en lugar de
- * inyectar HTML (nada de `dangerouslySetInnerHTML`). Patrones lineales, sin
- * riesgo de retroceso catastrófico.
+ * inyectar HTML crudo en el DOM. Patrones lineales, sin riesgo de retroceso
+ * catastrófico.
  */
 function limpiarFormato(texto: string): string {
   return texto
@@ -65,6 +65,98 @@ function limpiarFormato(texto: string): string {
     .replace(/__([^_\n]+)__/g, "$1")
     .replace(/(^|\s)\*([^*\n]+)\*(?=\s|[.,;:!?]|$)/g, "$1$2")
     .replace(/`([^`\n]+)`/g, "$1");
+}
+
+// ─── Linkificado de URLs en los mensajes ─────────────────────────────
+// Lógica pura (sin React) para poder probarla aislada: divide el texto en
+// segmentos de texto y URLs, separando la puntuación final que quede pegada
+// (por ejemplo el punto de fin de frase o el paréntesis de cierre).
+type SegmentoTexto =
+  | { tipo: "texto"; valor: string }
+  | { tipo: "enlace"; url: string };
+
+const URL_REGEX = /(https?:\/\/[^\s<>"]+)/g;
+const PUNTUACION_FINAL = /[.,;:)]+$/;
+
+function segmentarEnlaces(texto: string): SegmentoTexto[] {
+  const segmentos: SegmentoTexto[] = [];
+  let indice = 0;
+
+  for (const coincidencia of texto.matchAll(URL_REGEX)) {
+    const inicio = coincidencia.index ?? 0;
+    if (inicio > indice) segmentos.push({ tipo: "texto", valor: texto.slice(indice, inicio) });
+
+    let url = coincidencia[0];
+    const puntuacion = url.match(PUNTUACION_FINAL)?.[0] ?? "";
+    if (puntuacion) url = url.slice(0, -puntuacion.length);
+
+    if (url) segmentos.push({ tipo: "enlace", url });
+
+    // La puntuación descartada queda fuera del enlace: el siguiente segmento
+    // de texto la recoge junto al resto (así ", luego" es un solo segmento).
+    indice = inicio + coincidencia[0].length - puntuacion.length;
+  }
+
+  if (indice < texto.length) segmentos.push({ tipo: "texto", valor: texto.slice(indice) });
+  return segmentos;
+}
+
+function dominioDe(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "") || "sitio externo";
+  } catch {
+    return "sitio externo";
+  }
+}
+
+// Contrastes según el fondo de la burbuja (crema claro, rojo oscuro o dorado).
+const CLASE_ENLACE_ASESOR =
+  "font-medium text-blue-700 underline hover:text-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700";
+const CLASE_ENLACE_ERROR =
+  "font-medium text-sky-300 underline hover:text-sky-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300";
+const CLASE_ENLACE_USUARIO =
+  "font-medium text-blue-800 underline hover:text-blue-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800";
+
+/**
+ * Renderiza el texto de un mensaje como nodos React, sin inyectar HTML:
+ * las URLs se convierten en enlaces con el texto visible "Link" (descriptivo
+ * vía `aria-label`) y el resto se mantiene como texto plano.
+ */
+function TextoConEnlaces({
+  texto,
+  rol,
+  esError,
+}: {
+  texto: string;
+  rol: Mensaje["rol"];
+  esError: boolean;
+}) {
+  const claseEnlace = esError
+    ? CLASE_ENLACE_ERROR
+    : rol === "usuario"
+      ? CLASE_ENLACE_USUARIO
+      : CLASE_ENLACE_ASESOR;
+
+  return (
+    <>
+      {segmentarEnlaces(texto).map((segmento, indice) =>
+        segmento.tipo === "enlace" ? (
+          <a
+            key={`${indice}-${segmento.url}`}
+            href={segmento.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Abrir enlace a ${dominioDe(segmento.url)}`}
+            className={claseEnlace}
+          >
+            Link
+          </a>
+        ) : (
+          segmento.valor
+        ),
+      )}
+    </>
+  );
 }
 
 function IconoChat() {
@@ -421,7 +513,11 @@ export default function AsesorIA() {
                       <span className="sr-only">
                         {mensaje.rol === "usuario" ? "Tú: " : "Asesor IA: "}
                       </span>
-                      {mensaje.texto}
+                      <TextoConEnlaces
+                        texto={mensaje.texto}
+                        rol={mensaje.rol}
+                        esError={Boolean(mensaje.esError)}
+                      />
                       {mensaje.esError && (
                         <a
                           href={urlWhatsApp("Hola, necesito asesoría sobre muebles.")}
