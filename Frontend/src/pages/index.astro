@@ -131,6 +131,7 @@ const categorias = grupos.map((grupo) => ({
 <Layout
   title="El espacio de tus sueños"
   navMode="overlay"
+  wordmarkBicolor
   bodyClass="bg-black text-white"
 >
   <!-- Hero -->
@@ -138,10 +139,42 @@ const categorias = grupos.map((grupo) => ({
     <!-- En móvil la foto termina con el hero para no invadir la sección
          siguiente (el texto del concepto quedaría sobre la imagen). -->
     <div class="absolute inset-x-0 top-0 h-full overflow-hidden lg:h-[1000px]">
+      <!-- Móvil: el vídeo. Con `media` en los <source>, el escritorio no
+           descarga un archivo que no va a usar. -->
+      <video
+        class="jk-zoom h-full w-full object-cover opacity-[0.77] lg:hidden"
+        width="528"
+        height="944"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="auto"
+        poster="/videos/hero-mobiliario-poster.jpg"
+        aria-hidden="true"
+        tabindex="-1"
+        disablepictureinpicture
+        data-jk-hero-video
+      >
+        <source media="(max-width: 1023px)" src="/videos/hero-mobiliario.webm" type="video/webm" />
+        <source media="(max-width: 1023px)" src="/videos/hero-mobiliario.mp4" type="video/mp4" />
+      </video>
+
+      <!-- Escritorio: la imagen, no el vídeo. El vídeo es vertical (528x944) y
+           este hero es horizontal y de ancho completo: con `object-cover`, un
+           9:16 metido en 1440x1000 se amplía 2,7x y solo se ve el 39% central
+           de su altura. De ahí la borrosidad, y no tiene arreglo recomprimiendo:
+           medido contra el máster, el WebM ya rinde a 38,6 dB, que es su techo
+           (VP9 sin pérdida es idéntico al máster). Un máster de 528px no da más.
+           En cambio hero.jpg es 1600x1067, o sea horizontal: a 1440px encaja a
+           0,94x, sin ampliar. En móvil el vídeo sí se queda, porque ahí se
+           reduce (0,74x a 390px) y se ve nítido. -->
       <img
         src="/images/jk/hero.jpg"
         alt=""
-        class="jk-zoom h-full w-full object-cover opacity-[0.77]"
+        width="1600"
+        height="1067"
+        class="jk-zoom hidden h-full w-full object-cover opacity-[0.77] lg:block"
       />
       <div
         class="absolute inset-x-0 bottom-0 h-[143px] bg-linear-to-b from-transparent to-black"
@@ -699,5 +732,14 @@ const categorias = grupos.map((grupo) => ({
       elemento.classList.add("jk-listo");
       observador.observe(elemento);
     });
+  }
+
+  // Hero en video: con movimiento reducido se detiene y queda el poster como
+  // imagen fija. Sin JS, el autoplay nativo sigue funcionando con normalidad.
+  const videoHero = document.querySelector<HTMLVideoElement>("[data-jk-hero-video]");
+
+  if (videoHero && prefiereQuieto) {
+    videoHero.removeAttribute("autoplay");
+    videoHero.pause();
   }
 </script>
