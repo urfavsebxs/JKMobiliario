@@ -1,3 +1,4 @@
+import express from "express";
 import multer from "multer";
 
 const storage = multer.memoryStorage();
@@ -56,4 +57,25 @@ export const uploadModel = multer({
 
     cb(badRequest("Only .glb 3D models (model/gltf-binary) are allowed"));
   },
+});
+
+/** Límite del comprobante (4MB, igual que las imágenes de producto). */
+const COMPROBANTE_MAX_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Parser del comprobante que sube n8n.
+ *
+ * NO usa multer: el nodo HTTP Request de n8n, con `contentType: "binaryData"`,
+ * manda el archivo **crudo** como cuerpo, sin `multipart/form-data` y por tanto
+ * sin nombre de campo que `upload.single()` pueda buscar. `express.raw` deja el
+ * cuerpo íntegro en `req.body` como Buffer.
+ *
+ * El `type` es una función que acepta todo a propósito: n8n puede declarar
+ * `application/octet-stream`, `image/jpeg` o lo que el paso anterior dejara.
+ * El tipo real se decide por los bytes mágicos del archivo (ver
+ * `detectarMime`), no por lo que diga el llamador.
+ */
+export const rawComprobante = express.raw({
+  type: () => true,
+  limit: COMPROBANTE_MAX_BYTES,
 });

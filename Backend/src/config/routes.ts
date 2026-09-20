@@ -1,4 +1,15 @@
-type AccessLevel = "public" | "authenticated" | "admin";
+/**
+ * Nivel de acceso de una ruta.
+ *
+ * - `public`: sin credenciales.
+ * - `service`: sin JWT; exige el header `x-jk-service-key` (lo usa n8n para
+ *   ingerir comprobantes). Si `JK_SERVICE_KEY` no está configurada, estas
+ *   rutas quedan cerradas.
+ * - `authenticated`: cualquier usuario con token válido, sin importar el rol.
+ * - `trabajador`: admin **o** trabajador (el admin ve todo).
+ * - `admin`: solo admin.
+ */
+export type AccessLevel = "public" | "service" | "authenticated" | "trabajador" | "admin";
 
 interface RouteConfig {
   method: string;
@@ -29,6 +40,17 @@ const routes: RouteConfig[] = [
   { method: "POST", path: "/api/categories", access: "admin" },
   { method: "PUT", path: "/api/categories/:id", access: "admin" },
   { method: "DELETE", path: "/api/categories/:id", access: "admin" },
+
+  // Comprobantes de pago.
+  // `service`: los llama n8n con el header x-jk-service-key (no tiene JWT).
+  { method: "POST", path: "/api/comprobantes/imagen", access: "service" },
+  { method: "POST", path: "/api/comprobantes", access: "service" },
+  // `trabajador`: la pantalla de revisión del panel (el admin también entra).
+  { method: "GET", path: "/api/comprobantes", access: "trabajador" },
+  { method: "GET", path: "/api/comprobantes/motivos-rechazo", access: "trabajador" },
+  { method: "GET", path: "/api/comprobantes/:id", access: "trabajador" },
+  { method: "GET", path: "/api/comprobantes/:id/imagen", access: "trabajador" },
+  { method: "PATCH", path: "/api/comprobantes/:id", access: "trabajador" },
 ];
 
 const matchRoute = (configPath: string, requestPath: string): boolean => {

@@ -3,12 +3,13 @@ import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config";
 import { connectDB } from "./config/database";
-import { ensureBucket } from "./config/minio";
+import { ensureBucket, ensurePrivateBucket } from "./config/minio";
 import { errorHandler } from "./middlewares/errorHandler";
 import { accessControl } from "./middlewares/accessControl";
 import authRoutes from "./modules/auth/auth.routes";
 import productRoutes from "./modules/products/product.routes";
 import categoryRoutes from "./modules/categories/category.routes";
+import comprobanteRoutes from "./modules/comprobantes/comprobante.routes";
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use(accessControl);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/comprobantes", comprobanteRoutes);
 
 // ─── Global error handler (must be last) ─────────────────────────────
 app.use(errorHandler);
@@ -66,6 +68,10 @@ export default app;
 const start = async (): Promise<void> => {
   await connectDB();
   await ensureBucket();
+  // El bucket privado de comprobantes se asegura aparte: `ensureBucket` aplica
+  // lectura pública a todos los objetos de su bucket, y un comprobante lleva
+  // monto, fecha, banco y nombre del cliente.
+  await ensurePrivateBucket();
 
   app.listen(config.port, () => {
     console.log(`Server running on port ${config.port}`);

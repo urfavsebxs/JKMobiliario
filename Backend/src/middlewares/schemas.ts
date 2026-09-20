@@ -226,3 +226,64 @@ export const updateCategorySchema = z
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",
   });
+
+// ─── Comprobantes de pago ────────────────────────────────────────────
+
+/**
+ * POST /api/comprobantes/imagen
+ * Lo llama n8n antes de mandar el binario; devuelve la `key` que se usa después
+ * en el POST de metadatos. Va en el query string porque el cuerpo entero del
+ * request es la imagen cruda.
+ */
+export const comprobanteImagenSchema = z.object({
+  telefono: z.string().min(5, "El teléfono es obligatorio").max(40),
+  mime: z.string().min(3).max(100).optional(),
+});
+
+/**
+ * POST /api/comprobantes body (metadatos extraídos por el modelo de visión).
+ * Todo es opcional salvo `telefono` e `imagenKey`: el análisis puede fallar
+ * parcialmente y aun así interesa registrar el comprobante para revisión.
+ * El nivel de alerta NO lo fija el cliente: lo calcula el servicio.
+ */
+export const createComprobanteSchema = z.object({
+  telefono: z.string().min(5, "El teléfono es obligatorio").max(40),
+  imagenKey: z.string().min(1, "La key de la imagen es obligatoria").max(500),
+  nombreCliente: z.string().max(200).optional(),
+  /**
+   * Nombre del perfil de WhatsApp. Es el respaldo para saludar al cliente en la
+   * plantilla cuando el comprobante es ilegible y `nombreCliente` va vacío:
+   * Meta rechaza el envío si un parámetro de la plantilla queda vacío.
+   */
+  nombrePerfilWhatsApp: z.string().max(200).optional(),
+  producto: z.string().max(300).optional(),
+  monto: z.coerce.number().min(0).optional(),
+  bancoOrigen: z.string().max(100).optional(),
+  referenciaPago: z.string().max(200).optional(),
+  fechaPago: z.string().max(100).optional(),
+  /** JSON crudo del análisis; se guarda tal cual para auditar. */
+  datosExtraidos: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * Señales de manipulación detectadas por el modelo. El servicio las usa
+   * para calcular la alerta; no se confía en un nivel de alerta que venga
+   * del cliente.
+   */
+  senalesManipulacion: z.array(z.string().max(300)).max(20).optional(),
+  /** Confianza declarada por el modelo (0-1). */
+  confianza: z.coerce.number().min(0).max(1).optional(),
+});
+
+/**
+ * PATCH /api/comprobantes/:id — aprobar o rechazar.
+ * `motivoRechazo` es obligatorio al rechazar y debe ser una clave conocida;
+ * se valida contra la lista real en el servicio (aquí solo la forma).
+ */
+export const revisarComprobanteSchema = z
+  .object({
+    estado: z.enum(["aprobado", "rechazado"]),
+    motivoRechazo: z.string().max(50).optional(),
+  })
+  .refine((data) => data.estado !== "rechazado" || !!data.motivoRechazo, {
+    message: "El motivo es obligatorio al rechazar",
+    path: ["motivoRechazo"],
+  });

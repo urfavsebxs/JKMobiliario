@@ -1,11 +1,19 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
+/**
+ * Roles disponibles.
+ * - `admin`: gestión completa del catálogo y del panel.
+ * - `trabajador`: solo revisa comprobantes de pago (`/admin/comprobantes`).
+ */
+export const ROLES = ["admin", "trabajador"] as const;
+export type Rol = (typeof ROLES)[number];
+
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  role: "admin";
+  role: Rol;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -16,7 +24,10 @@ const userSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
-    role: { type: String, enum: ["admin"], default: "admin" },
+    // Default "trabajador" = menor privilegio: un usuario creado sin declarar
+    // rol explícitamente nunca sale administrador. `seed.ts` y el script
+    // `user:create` pasan el rol siempre de forma explícita.
+    role: { type: String, enum: ROLES, default: "trabajador" },
   },
   { timestamps: true }
 );
