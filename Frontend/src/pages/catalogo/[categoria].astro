@@ -1,6 +1,8 @@
 ---
 export const prerender = false;
 
+import { Image } from "astro:assets";
+import hero from "../../assets/jk/hero.jpg";
 import Layout from "../../layouts/Layout.astro";
 import FiltrosCatalogo from "../../components/site/FiltrosCatalogo.astro";
 import Paginacion from "../../components/site/Paginacion.astro";
@@ -134,9 +136,13 @@ const waMedidasHref = whatsapp
 <Layout title={categoria} navMode="overlay" bodyClass="bg-jk-surface text-jk-ink">
   <!-- Cabecera oscura con el panel de subcategorías -->
   <section class="relative overflow-hidden bg-black">
-    <img
-      src="/images/jk/hero.jpg"
+    <Image
+      src={hero}
       alt=""
+      width={1440}
+      height={960}
+      widths={[960, 1440, 1920]}
+      sizes="100vw"
       class="absolute inset-0 h-full w-full object-cover opacity-[0.35]"
     />
     <div

@@ -1,5 +1,16 @@
 ---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
 import Layout from "../layouts/Layout.astro";
+import hero from "../assets/jk/hero.jpg";
+import d1 from "../assets/jk/d1.jpg";
+import d2 from "../assets/jk/d2.jpg";
+import d3 from "../assets/jk/d3.jpg";
+import g1 from "../assets/jk/g1.jpg";
+import g2 from "../assets/jk/g2.jpg";
+import g3 from "../assets/jk/g3.jpg";
+import catSofas from "../assets/jk/cat-sofas.jpg";
+import catSillas from "../assets/jk/cat-sillas.jpg";
 import { getCategorias, getProducts } from "../lib/api";
 import {
   agruparCategorias,
@@ -65,17 +76,22 @@ const pilares = [
 // Imágenes curadas: conservan el aspecto actual de las tres tarjetas clásicas.
 // Se usan Map para que slugs como "constructor" o "toString" no colisionen con
 // las propiedades heredadas de Object.prototype.
-const IMAGENES_CURADAS = new Map<string, string>([
-  ["camas", "/images/jk/g1.jpg"],
-  ["sofas", "/images/jk/cat-sofas.jpg"],
-  ["sillas", "/images/jk/cat-sillas.jpg"],
+//
+// Los archivos viven en `src/assets/`, no en `public/`: los de `public/` se
+// copian tal cual y el navegador los revalida en cada visita
+// (`cache-control: max-age=0, must-revalidate`). Importados, en cambio, Astro
+// los redimensiona, los sirve en WebP y les pone un año de caché inmutable.
+const IMAGENES_CURADAS = new Map<string, ImageMetadata>([
+  ["camas", g1],
+  ["sofas", catSofas],
+  ["sillas", catSillas],
 ]);
 
 // Respaldo local si el grupo no tiene foto propia ni productos con imagen.
-const IMAGENES_RESPALDO = new Map<string, string>([
-  ["comedores", "/images/jk/g2.jpg"],
-  ["mesas", "/images/jk/d2.jpg"],
-  ["otros", "/images/jk/g3.jpg"],
+const IMAGENES_RESPALDO = new Map<string, ImageMetadata>([
+  ["comedores", g2],
+  ["mesas", d2],
+  ["otros", g3],
 ]);
 
 // Lectura única de productos para resolver la prioridad 3 (foto real de una
@@ -88,8 +104,10 @@ try {
   productos = [];
 }
 
-/** Elige la imagen de la tarjeta de un grupo por orden de prioridad. */
-const imagenDeGrupo = (grupo: GrupoCategorias): string => {
+/** Elige la imagen de la tarjeta de un grupo por orden de prioridad.
+ *  Devuelve el asset importado cuando la foto es del repo, o la URL tal cual
+ *  cuando viene de MinIO (esas no se pueden importar: se optimizan al servir). */
+const imagenDeGrupo = (grupo: GrupoCategorias): ImageMetadata | string => {
   const slug = slugDeCategoria(grupo.titulo);
 
   const curada = IMAGENES_CURADAS.get(slug);
@@ -108,8 +126,23 @@ const imagenDeGrupo = (grupo: GrupoCategorias): string => {
   );
   if (conFoto?.images?.[0]) return proxyImageUrl(conFoto.images[0]);
 
-  return IMAGENES_RESPALDO.get(slug) ?? "/images/jk/hero.jpg";
+  return IMAGENES_RESPALDO.get(slug) ?? hero;
 };
+
+/** `true` si la foto es un asset del repo (importado) y no una URL remota. */
+const esAssetLocal = (foto: ImageMetadata | string): foto is ImageMetadata =>
+  typeof foto === "object" && foto !== null && "src" in foto;
+
+/**
+ * Optimiza una foto remota (MinIO) sin descargarla en build: se le pide al
+ * endpoint `/_image` de Astro un WebP del tamaño de la tarjeta, que además
+ * responde con un año de caché. Si la URL llegara en HTTP se deja pasar por el
+ * proxy de siempre, porque `/_image` solo admite el origen en HTTPS.
+ */
+const urlDeFotoRemota = (url: string): string =>
+  url.startsWith("http://")
+    ? proxyImageUrl(url)
+    : `/_image?href=${encodeURIComponent(url)}&w=380&h=495&f=webp`;
 
 // Caché por request: la home y los dos paneles de Nav comparten esta consulta.
 // Si la API falla o devuelve una lista vacía se aplica el respaldo local, de
@@ -169,11 +202,15 @@ const categorias = grupos.map((grupo) => ({
            En cambio hero.jpg es 1600x1067, o sea horizontal: a 1440px encaja a
            0,94x, sin ampliar. En móvil el vídeo sí se queda, porque ahí se
            reduce (0,74x a 390px) y se ve nítido. -->
-      <img
-        src="/images/jk/hero.jpg"
+      <Image
+        src={hero}
         alt=""
-        width="1600"
-        height="1067"
+        width={1440}
+        height={960}
+        widths={[960, 1440, 1920]}
+        sizes="100vw"
+        loading="eager"
+        fetchpriority="high"
         class="jk-zoom hidden h-full w-full object-cover opacity-[0.77] lg:block"
       />
       <div
@@ -270,24 +307,36 @@ const categorias = grupos.map((grupo) => ({
       <div
         class="grid grid-cols-2 gap-3 lg:absolute lg:left-[133px] lg:top-[125px] lg:block lg:h-[570px] lg:w-[734px] lg:gap-0"
       >
-        <img
-          src="/images/jk/d2.jpg"
+        <Image
+          src={d2}
           alt="Sala con mobiliario a medida"
+          width={342}
+          height={325}
+          widths={[342, 684]}
+          sizes="(min-width: 1024px) 342px, 45vw"
           class="col-span-1 aspect-[342/325] w-full rounded-[3px] object-cover lg:absolute lg:left-0 lg:top-0 lg:h-[325px] lg:w-[342px]"
           loading="lazy"
           data-anim
         />
-        <img
-          src="/images/jk/d1.jpg"
+        <Image
+          src={d1}
           alt="Comedor en madera"
+          width={381}
+          height={426}
+          widths={[381, 762]}
+          sizes="(min-width: 1024px) 381px, 45vw"
           class="col-span-1 aspect-[342/325] w-full rounded-[3px] object-cover lg:absolute lg:left-[353px] lg:top-[74px] lg:h-[426px] lg:w-[381px]"
           loading="lazy"
           data-anim
           data-anim-delay="120"
         />
-        <img
-          src="/images/jk/d3.jpg"
+        <Image
+          src={d3}
           alt="Detalle de mobiliario"
+          width={342}
+          height={233}
+          widths={[342, 684]}
+          sizes="(min-width: 1024px) 342px, 90vw"
           class="col-span-2 aspect-[342/233] w-full rounded-[3px] object-cover lg:absolute lg:left-0 lg:top-[337px] lg:h-[233px] lg:w-[342px]"
           loading="lazy"
           data-anim
@@ -419,12 +468,27 @@ const categorias = grupos.map((grupo) => ({
                 >
                   <figure class="relative">
                     <div class="overflow-hidden rounded-[4px] border border-jk-gold opacity-74">
-                      <img
-                        src={categoria.imagen}
-                        alt={copia === 0 ? categoria.nombre : ""}
-                        class="h-[360px] w-full object-cover lg:h-[495px]"
-                        loading="lazy"
-                      />
+                      {esAssetLocal(categoria.imagen) ? (
+                        <Image
+                          src={categoria.imagen}
+                          alt={copia === 0 ? categoria.nombre : ""}
+                          width={380}
+                          height={495}
+                          widths={[320, 380, 760]}
+                          sizes="(min-width: 1024px) 380px, (min-width: 640px) 320px, 78vw"
+                          class="h-[360px] w-full object-cover lg:h-[495px]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <img
+                          src={urlDeFotoRemota(categoria.imagen)}
+                          alt={copia === 0 ? categoria.nombre : ""}
+                          width={380}
+                          height={495}
+                          class="h-[360px] w-full object-cover lg:h-[495px]"
+                          loading="lazy"
+                        />
+                      )}
                     </div>
                     <figcaption class="absolute bottom-[29px] left-[22px]">
                       <span class="jk-linea block h-px w-[48px] bg-jk-gold" />
