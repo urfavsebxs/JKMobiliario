@@ -109,7 +109,12 @@ const flagValue = (name: string): string | undefined => {
 
 const hasFlag = (name: string): boolean => argv.includes(name);
 
-const API_BASE_URL = (process.env.API_BASE_URL ?? "http://2.25.126.250:4000").replace(/\/+$/, "");
+// Por defecto, loopback y en claro: este script se ejecuta EN el servidor que
+// hospeda el backend, así que no necesita salir a Internet ni pasar por Caddy.
+// Antes el valor por defecto era la IP pública con el puerto, que viajaba en
+// claro por la red; contra el servidor real se sigue apuntando con API_BASE_URL
+// (p. ej. API_BASE_URL=https://api.jkmobiliario.digital).
+const API_BASE_URL = (process.env.API_BASE_URL ?? "http://127.0.0.1:4000").replace(/\/+$/, "");
 const MANIFEST_PATH = path.resolve(__dirname, "../../catalog/products.json");
 const MAX_RETRIES = 2;          // 2 reintentos => hasta 3 intentos por request
 const BACKOFF_MS = 400;

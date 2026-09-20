@@ -11,6 +11,20 @@ const requireEnv = (key: string): string => {
 
 export const config = {
   port: parseInt(process.env.PORT || "4000", 10),
+  // Interfaz en la que se escucha. Por defecto SOLO loopback, nunca 0.0.0.0.
+  //
+  // El backend vive detrás de Caddy, que reenvía a `localhost:4000`, así que
+  // atarlo a todas las interfaces no aporta nada y sí expone: el puerto quedaba
+  // alcanzable desde Internet en claro y sin pasar por Caddy, es decir, sin TLS,
+  // sin sus cabeceras y sin las reglas que él aplica. Comprobado: en el servidor
+  // de producción `:4000` respondía al mundo mientras el propio
+  // `docker-compose.yml` de este repo ya publicaba `127.0.0.1:4000:4000` — la
+  // intención siempre fue loopback; el proceso suelto de pm2 era el que se salía.
+  //
+  // 0.0.0.0 se sigue pudiendo pedir con HOST, y ahí sí hace falta el cortafuegos
+  // delante. El caso real es un contenedor con el backend en otra red: dentro de
+  // uno, el proxy entra por la IP del bridge (172.17.0.1), que no es loopback.
+  host: process.env.HOST?.trim() || "127.0.0.1",
   mongoUri: requireEnv("MONGODB_URI"),
   jwtSecret: requireEnv("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "24h",

@@ -100,8 +100,11 @@ const start = async (): Promise<void> => {
   // monto, fecha, banco y nombre del cliente.
   await ensurePrivateBucket();
 
-  app.listen(config.port, () => {
-    console.log(`Server running on port ${config.port}`);
+  // `config.host` es 127.0.0.1 por defecto: Caddy entra por loopback, así que el
+  // puerto no queda expuesto a Internet a espaldas del proxy. Ver el comentario
+  // en config/index.ts.
+  app.listen(config.port, config.host, () => {
+    console.log(`Server running on ${config.host}:${config.port}`);
   });
 };
 
