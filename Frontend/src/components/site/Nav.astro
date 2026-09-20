@@ -6,9 +6,11 @@ interface Props {
   mode?: "overlay" | "solid";
   /** Ruta activa, sólo para el estado visual del enlace. */
   active?: string;
+  /** Wordmark bicolor (solo portada): "JK" en dorado y "Mobiliario" en negro. */
+  wordmarkBicolor?: boolean;
 }
 
-const { mode = "solid", active = "" } = Astro.props;
+const { mode = "solid", active = "", wordmarkBicolor = false } = Astro.props;
 const overlay = mode === "overlay";
 
 const links = [
@@ -44,7 +46,10 @@ const contactHref = whatsapp ? `https://wa.me/${whatsapp}` : "/#contacto";
 const contactTarget = whatsapp ? "_blank" : undefined;
 const contactRel = whatsapp ? "noopener noreferrer" : undefined;
 
-const wordmark = overlay ? "text-white" : "text-black";
+// En la portada el wordmark se pinta bicolor: "JK" dorado y "Mobiliario" con la
+// tinta base (negro sobre el video; las reglas globales lo pasan a blanco en
+// los estados oscuros del header).
+const wordmark = overlay && !wordmarkBicolor ? "text-white" : "text-black";
 const linkColor = overlay ? "text-jk-gold" : "text-black";
 
 // Sobre la foto del hero el diseño no dibuja caja: sólo texto blanco.
@@ -79,7 +84,16 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
         wordmark,
       ]}
     >
-      JK Mobiliario
+      {
+        wordmarkBicolor ? (
+          <>
+            <span class="text-jk-gold">JK</span>{" "}
+            <span class="jk-wordmark-resto">Mobiliario</span>
+          </>
+        ) : (
+          "JK Mobiliario"
+        )
+      }
     </a>
 
     <!-- Navegación de escritorio: en móvil se sustituye por el menú hamburguesa -->
@@ -351,6 +365,16 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     color: #fff;
   }
 
+  /* El desplegable también puede abrirse sobre la portada (modo "overlay"): en
+     el wordmark bicolor "Mobiliario" tiene tinta negra de base y quedaría
+     ilegible sobre la banda oscura, así que pasa a blanco mientras el grupo
+     siga abierto. El "JK" conserva su dorado propio en el span. */
+  .jk-header:has(.jk-cat-group[data-open]:not([data-escaping])) .jk-wordmark-resto,
+  .jk-header:has(.jk-cat-group:not([data-escaping]):hover) .jk-wordmark-resto,
+  .jk-header:has(.jk-cat-group:not([data-escaping]):focus-within) .jk-wordmark-resto {
+    color: #fff;
+  }
+
   /* --------------------------------------------------------------------------
      Cabecera fija al hacer scroll
      - El script alterna `data-fija` en el <header> a partir de los 80px.
@@ -553,6 +577,16 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
 </style>
 
 <script>
+  import { destinoTrasLogin, RUTA_CAMBIO_PASSWORD } from "../../lib/rutas";
+
+  /** Etiqueta del enlace de sesión según a dónde lleve. */
+  const ETIQUETAS: Record<string, string> = {
+    [RUTA_CAMBIO_PASSWORD]: "Cambiar contraseña",
+    "/admin": "Panel",
+    "/admin/comprobantes": "Comprobantes",
+    "/": "Mi cuenta",
+  };
+
   // --- Sesión: acceso al panel y cierre de sesión ---
   // Con sesión activa los enlaces de login apuntan al panel y aparece el botón
   // de cerrar sesión. Sin sesión (o con localStorage bloqueado) se mantienen
@@ -565,9 +599,15 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     const usuario = JSON.parse(localStorage.getItem("user") || "null");
 
     if (token && usuario) {
-      const esAdmin = usuario.role === "admin";
-      const destino = esAdmin ? "/admin" : "/";
-      const etiqueta = esAdmin ? "Panel" : "Mi cuenta";
+      // El admin ve todo el panel; el trabajador solo la revisión de
+      // comprobantes (`/admin` lo redirige, ver src/middleware.ts). Con
+      // contraseña temporal, el enlace lleva a cambiarla.
+      //
+      // El destino sale de `lib/rutas.ts`, la misma función que usan el login
+      // del cliente, el del servidor y el middleware: si la decisión se
+      // escribiera otra vez aquí, este sería el sitio donde se quedaría atrás.
+      const destino = destinoTrasLogin(usuario);
+      const etiqueta = ETIQUETAS[destino] ?? "Mi cuenta";
 
       accesos.forEach((acceso) => {
         acceso.href = destino;

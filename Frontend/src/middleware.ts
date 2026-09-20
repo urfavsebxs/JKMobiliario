@@ -1,22 +1,21 @@
 import { defineMiddleware } from "astro:middleware";
+import { RUTA_CAMBIO_PASSWORD, puedeTrabajador } from "./lib/rutas";
 
 const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
 
 /**
- * Rutas del panel abiertas al rol `trabajador`.
- *
- * El trabajador solo revisa comprobantes de pago: todo lo demás del panel
- * (productos, categorías, descuentos, modelos) sigue siendo exclusivo del
- * admin. Sin esta excepción el trabajador sería redirigido a `/` y la
- * pantalla quedaría inalcanzable.
+ * El guard solo cubre `/admin` (ver `onRequest`), así que `/cambio-password`
+ * necesita su propia comprobación dentro de la página. Aquí solo se evita que
+ * un usuario ya migrado vuelva a ella.
  */
-const RUTAS_TRABAJADOR = ["/admin/comprobantes"];
-
-const puedeTrabajador = (pathname: string): boolean =>
-  RUTAS_TRABAJADOR.some((ruta) => pathname === ruta || pathname.startsWith(`${ruta}/`));
-
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
+
+  // La pantalla de cambio vive fuera de `/admin`, así que no pasa por el guard
+  // de abajo: se protege sola dentro de la página.
+  if (pathname === RUTA_CAMBIO_PASSWORD) {
+    return next();
+  }
 
   if (pathname.startsWith("/admin")) {
     const token = context.cookies.get("token")?.value;
@@ -36,7 +35,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
       }
 
       const data = await res.json();
-      const rol = data.data.role;
+      const usuario = data.data;
+      const rol = usuario.role;
+
+      // Contraseña temporal sin cambiar: no entra al panel. Aunque llegara
+      // (p. ej. escribiendo la URL), el backend le respondería 403 a todo.
+      if (usuario.debeCambiarPassword) {
+        return context.redirect(RUTA_CAMBIO_PASSWORD);
+      }
 
       if (rol === "trabajador" && !puedeTrabajador(pathname)) {
         return context.redirect("/admin/comprobantes");

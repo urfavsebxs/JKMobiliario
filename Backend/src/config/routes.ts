@@ -22,6 +22,19 @@ const routes: RouteConfig[] = [
 
   { method: "POST", path: "/api/auth/login", access: "public" },
   { method: "GET", path: "/api/auth/profile", access: "authenticated" },
+  // `authenticated`, no `admin`: es la ruta que usa el propio trabajador en su
+  // primer login para salir de la contraseña temporal.
+  { method: "POST", path: "/api/auth/change-password", access: "authenticated" },
+
+  // Gestión de usuarios del panel.
+  // `admin` en todas: crear cuentas, darlas de baja y regenerar credenciales
+  // son operaciones de administración. El fallback de `getAccess` es
+  // "authenticated", así que sin declararlas aquí cualquier usuario logueado
+  // podría crearse un admin.
+  { method: "GET", path: "/api/users", access: "admin" },
+  { method: "POST", path: "/api/users", access: "admin" },
+  { method: "PATCH", path: "/api/users/:id/activo", access: "admin" },
+  { method: "POST", path: "/api/users/:id/password-temporal", access: "admin" },
 
   { method: "GET", path: "/api/products", access: "public" },
   { method: "GET", path: "/api/products/:id", access: "public" },

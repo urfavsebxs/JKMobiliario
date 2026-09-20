@@ -16,11 +16,14 @@ export function mensajeError(error: unknown, porDefecto: string): string {
 /** Error de API con el código HTTP para poder distinguir el 401. */
 export class ErrorApi extends Error {
   estado: number;
+  /** Código del backend cuando el error no se explica solo con el status. */
+  codigo?: string;
 
-  constructor(message: string, estado = 0) {
+  constructor(message: string, estado = 0, codigo?: string) {
     super(message);
     this.name = "ErrorApi";
     this.estado = estado;
+    this.codigo = codigo;
   }
 }
 
@@ -35,6 +38,17 @@ export function tokenActual(): string | null {
 export function redirigirLogin(): void {
   window.location.href = "/login";
 }
+
+/** El usuario sigue con la contraseña temporal: hay que cambiarla ya. */
+export function redirigirCambioPassword(): void {
+  window.location.href = "/cambio-password";
+}
+
+/**
+ * Código que manda el backend cuando bloquea una petición porque el usuario
+ * todavía no cambió su contraseña temporal (ver `exigirPasswordCambiada.ts`).
+ */
+const CODIGO_PASSWORD_TEMPORAL = "PASSWORD_TEMPORAL";
 
 function mensajeDeRespuesta(json: unknown, porDefecto: string): string {
   if (!json || typeof json !== "object") return porDefecto;
@@ -73,6 +87,13 @@ export async function adminFetch<T>(path: string, options: RequestInit = {}): Pr
   }
 
   const json = await res.json().catch(() => null);
+
+  // Contraseña temporal sin cambiar: el backend bloquea todo. Se manda a la
+  // pantalla de cambio en vez de pintar un 403 que el usuario no entendería.
+  if ((json as { codigo?: string } | null)?.codigo === CODIGO_PASSWORD_TEMPORAL) {
+    redirigirCambioPassword();
+    throw new ErrorApi(mensajeDeRespuesta(json, "Debes cambiar tu contraseña"), 403, CODIGO_PASSWORD_TEMPORAL);
+  }
 
   if (!res.ok) {
     throw new ErrorApi(mensajeDeRespuesta(json, "Error en la solicitud"), res.status);

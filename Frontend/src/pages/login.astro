@@ -4,6 +4,12 @@ import Layout from "../layouts/Layout.astro";
 // El mensaje llega por query string cuando el formulario se envía sin JS
 // (la ruta /api/auth/login redirige de vuelta con ?error=).
 const error = Astro.url.searchParams.get("error");
+
+// La pantalla de cambio de contraseña vuelve aquí con ?cambio=ok. Es el único
+// acuse de recibo que recibe alguien que acaba de cambiar su contraseña
+// temporal: el backend ya le invalidó el token, así que lo único que puede
+// hacer es entrar de nuevo, y sin este aviso no sabría si el cambio funcionó.
+const cambioOk = Astro.url.searchParams.get("cambio") === "ok";
 ---
 
 <Layout title="Iniciar Sesión" bodyClass="bg-jk-surface text-jk-ink">
@@ -35,6 +41,15 @@ const error = Astro.url.searchParams.get("error");
           >
             {error}
           </div>
+
+          {cambioOk && (
+            <div
+              role="status"
+              class="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-[13px] text-green-700"
+            >
+              Tu contraseña quedó guardada. Entra de nuevo con la nueva.
+            </div>
+          )}
 
           <form id="login-form" action="/api/auth/login" method="post" class="mt-6 space-y-5">
             <div>
@@ -158,6 +173,8 @@ const error = Astro.url.searchParams.get("error");
   </div>
 
   <script>
+    import { destinoTrasLogin } from "../lib/rutas";
+
     const form = document.getElementById("login-form") as HTMLFormElement;
     const errorDiv = document.getElementById("error-message") as HTMLDivElement;
     const submitBtn = document.getElementById("login-submit") as HTMLButtonElement;
@@ -215,10 +232,10 @@ const error = Astro.url.searchParams.get("error");
         localStorage.setItem("user", JSON.stringify(data.data.user));
 
         // El admin entra al panel completo; el trabajador, a la revisión de
-        // comprobantes, que es lo único que puede ver.
-        const rol = data.data.user.role;
-        window.location.href =
-          rol === "admin" ? "/admin" : rol === "trabajador" ? "/admin/comprobantes" : "/";
+        // comprobantes, que es lo único que puede ver. Con contraseña temporal
+        // va primero a cambiarla: la decisión vive en `lib/rutas.ts` para que
+        // sea la misma aquí y en el resto de los sitios que redirigen.
+        window.location.href = destinoTrasLogin(data.data.user);
       } catch (err) {
         errorDiv.textContent = err instanceof Error ? err.message : "Error al iniciar sesión";
         errorDiv.classList.remove("hidden");

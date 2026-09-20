@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { ROLES } from "../models/User";
+import { LARGO_MINIMO_PASSWORD } from "../lib/passwords";
 
 // ─── Auth ────────────────────────────────────────────────────────────
 
@@ -12,6 +14,51 @@ export const loginSchema = z.object({
     .string()
     .min(1, "Password is required")
     .max(128, "Password too long"),
+});
+
+/**
+ * Contraseña que el usuario elige para sí mismo. La política vive aquí y en
+ * `lib/passwords.ts` — el login NO la aplica a propósito: revelar los requisitos
+ * en la pantalla de entrada solo ayudaría a quien prueba contraseñas.
+ */
+const newPasswordSchema = z
+  .string()
+  .min(LARGO_MINIMO_PASSWORD, `La contraseña debe tener al menos ${LARGO_MINIMO_PASSWORD} caracteres`)
+  .max(128, "La contraseña es demasiado larga");
+
+/**
+ * POST /api/auth/change-password
+ * El usuario cambia su propia contraseña (incluida la temporal del primer
+ * login). Se exige la actual: prueba posesión y evita que alguien que encuentre
+ * una sesión abierta fije una contraseña nueva.
+ */
+export const changePasswordSchema = z
+  .object({
+    passwordActual: z.string().min(1, "La contraseña actual es obligatoria").max(128),
+    passwordNueva: newPasswordSchema,
+    confirmarPassword: z.string().min(1, "Confirma la contraseña nueva").max(128),
+  })
+  .refine((data) => data.passwordNueva === data.confirmarPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmarPassword"],
+  });
+
+// ─── Usuarios del panel ──────────────────────────────────────────────
+
+/**
+ * POST /api/users body.
+ * El rol se valida contra la lista real del modelo, no contra un enum duplicado
+ * aquí: si mañana se añade un rol, este esquema lo acepta sin tocarse.
+ */
+export const createUserSchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(120),
+  email: z.string().trim().min(1, "El correo es obligatorio").email("Correo no válido").max(255),
+  role: z.enum(ROLES),
+});
+
+/** PATCH /api/users/:id/activo body. */
+export const updateActivoSchema = z.object({
+  activo: z.boolean({ message: "activo debe ser true o false" }),
 });
 
 // ─── Products ────────────────────────────────────────────────────────

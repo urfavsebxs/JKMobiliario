@@ -63,6 +63,31 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  /**
+   * `true` mientras la contraseña vigente sea la temporal que generó un
+   * administrador. Opcional para no romper las sesiones ya guardadas en
+   * `localStorage`, que se serializaron sin este campo.
+   */
+  debeCambiarPassword?: boolean;
+}
+
+/** Cuenta del panel tal como la devuelve `GET /api/users`. */
+export interface UsuarioPanel {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  activo: boolean;
+  debeCambiarPassword: boolean;
+  creadoPor?: string;
+  createdAt: string;
+}
+
+/** Respuesta de crear o regenerar una contraseña temporal. */
+export interface UsuarioConCredencial {
+  usuario: UsuarioPanel;
+  /** Se muestra UNA sola vez; no vuelve a poder consultarse. */
+  passwordTemporal: string;
 }
 
 /** Prioridad de revisión del comprobante, de menor a mayor urgencia. */

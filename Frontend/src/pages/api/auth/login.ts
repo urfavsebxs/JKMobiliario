@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from "astro";
+import { destinoTrasLogin } from "../../../lib/rutas";
 
 const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
 
@@ -53,9 +54,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   });
 
   if (esFormulario) {
-    const rol = data.data.user.role;
-    const destino = rol === "admin" ? "/admin" : rol === "trabajador" ? "/admin/comprobantes" : "/";
-    return redirect(destino, 303);
+    // Camino sin JavaScript: la misma decisión de destino que en el cliente.
+    return redirect(destinoTrasLogin(data.data.user), 303);
   }
 
   return new Response(JSON.stringify(data), { status: 200 });

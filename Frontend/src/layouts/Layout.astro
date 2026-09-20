@@ -9,6 +9,8 @@ interface Props {
   title: string;
   description?: string;
   navMode?: "overlay" | "solid";
+  /** Wordmark bicolor en la portada ("JK" dorado + "Mobiliario" negro). */
+  wordmarkBicolor?: boolean;
   bodyClass?: string;
 }
 
@@ -16,6 +18,7 @@ const {
   title,
   description = "Diseño y mobiliario de alta gama pensado para crear ambientes únicos.",
   navMode = "solid",
+  wordmarkBicolor = false,
   bodyClass = "bg-black text-white",
 } = Astro.props;
 ---
@@ -38,7 +41,7 @@ const {
     <title>{title} | JK Mobiliario</title>
   </head>
   <body class={bodyClass}>
-    <Nav mode={navMode} />
+    <Nav mode={navMode} wordmarkBicolor={wordmarkBicolor} />
     <main>
       <slot />
     </main>
