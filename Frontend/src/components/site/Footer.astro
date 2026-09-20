@@ -163,16 +163,13 @@ const linkClass =
               class="flex cursor-pointer items-start gap-[7px] rounded-md"
               aria-label="Ver la dirección en Google Maps o Waze"
             >
-              <img
-                src="/images/jk/icon-ubi.png"
-                alt=""
-                width="33"
-                height="50"
-                class="h-[50px] w-[33px] shrink-0 object-contain"
-                loading="lazy"
+              <span
+                aria-hidden="true"
+                style={estiloIcono("/images/jk/icon-ubi.png", "var(--color-jk-red)")}
+                class="h-[50px] w-[33px] shrink-0"
               />
               <address
-                class="font-sans text-[15px] font-semibold not-italic leading-[normal] text-jk-red"
+                class="font-sans text-[15px] font-semibold not-italic leading-[normal] text-white"
               >
                 Carrera 52 #7 Sur -22<br />Mall providencia<br />Avenida Guayabal<br />Medellín
                 <span
