@@ -6,11 +6,12 @@ interface Props {
   mode?: "overlay" | "solid";
   /** Ruta activa, sólo para el estado visual del enlace. */
   active?: string;
-  /** Wordmark bicolor (solo portada): "JK" en dorado y "Mobiliario" en negro. */
-  wordmarkBicolor?: boolean;
+  /** Fuerza el wordmark a tinta plana en vez de bicolor (para fondos claros
+   *  donde el dorado no contrasta). Por defecto va bicolor en todo el sitio. */
+  wordmarkPlano?: boolean;
 }
 
-const { mode = "solid", active = "", wordmarkBicolor = false } = Astro.props;
+const { mode = "solid", active = "", wordmarkPlano = false } = Astro.props;
 const overlay = mode === "overlay";
 
 const links = [
@@ -46,10 +47,18 @@ const contactHref = whatsapp ? `https://wa.me/${whatsapp}` : "/#contacto";
 const contactTarget = whatsapp ? "_blank" : undefined;
 const contactRel = whatsapp ? "noopener noreferrer" : undefined;
 
-// En la portada el wordmark se pinta bicolor: "JK" dorado y "Mobiliario" con la
+// El wordmark va bicolor en todo el sitio: "JK" dorado y "Mobiliario" con la
 // tinta base (negro sobre el video; las reglas globales lo pasan a blanco en
 // los estados oscuros del header).
-const wordmark = overlay && !wordmarkBicolor ? "text-white" : "text-black";
+const wordmark = overlay ? "text-white" : "text-black";
+const wordmarkBicolor = !wordmarkPlano;
+
+// El dorado tiene que cambiar de tono según el fondo, o no se lee: el claro
+// (#c8be98) da 11,3:1 sobre negro pero solo 1,7:1 sobre el gris del header
+// "solid"; el oscuro (#625d4a) da 6,2:1 sobre ese gris y se queda en 3,2:1
+// sobre negro. Como el header cambia de fondo al hacer scroll y al abrir el
+// desplegable, la clase se intercambia por CSS, no aquí.
+const dorado = overlay ? "jk-marca-claro" : "jk-marca-oscuro";
 const linkColor = overlay ? "text-jk-gold" : "text-black";
 
 // Sobre la foto del hero el diseño no dibuja caja: sólo texto blanco.
@@ -80,14 +89,14 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
     <a
       href="/"
       class:list={[
-        "jk-nav-ink pointer-events-auto font-brand text-[26px] font-medium tracking-[-0.25px] transition-[color,opacity] lg:text-[32px]",
+        "jk-nav-ink pointer-events-auto font-logo text-[26px] font-medium tracking-[-0.25px] transition-[color,opacity] lg:text-[32px]",
         wordmark,
       ]}
     >
       {
         wordmarkBicolor ? (
           <>
-            <span class="text-jk-gold">JK</span>{" "}
+            <span class={dorado}>JK</span>{" "}
             <span class="jk-wordmark-resto">Mobiliario</span>
           </>
         ) : (
@@ -406,6 +415,29 @@ const burgerHover = overlay ? "hover:bg-white/10" : "hover:bg-black/5";
   .jk-header[data-fija] .jk-nav-ink,
   .jk-header[data-fija] .jk-burger {
     color: #fff;
+  }
+
+  /* El dorado del wordmark, según lo que tenga detrás. Los dos tonos salen de
+     la paleta: `jk-gold` y `jk-gold-deep`. Se conmutan con la misma condición
+     que ya vuelve blanca la tinta del menú (header fijo, o desplegable abierto
+     sobre el fondo claro del modo "solid"), para que el logo no se quede
+     desvaído cuando la banda oscura pasa por detrás.
+     Las reglas base van declaradas aquí, no como utilidad de Tailwind: sin
+     ellas el span no tendría color propio y heredaría el blanco del enlace,
+     que es justo el que hay que sustituir. */
+  .jk-marca-claro {
+    color: var(--color-jk-gold);
+  }
+
+  .jk-marca-oscuro {
+    color: var(--color-jk-gold-deep);
+  }
+
+  .jk-header[data-fija] .jk-marca-oscuro,
+  .jk-header-solid:has(.jk-cat-group[data-open]:not([data-escaping])) .jk-marca-oscuro,
+  .jk-header-solid:has(.jk-cat-group:not([data-escaping]):hover) .jk-marca-oscuro,
+  .jk-header-solid:has(.jk-cat-group:not([data-escaping]):focus-within) .jk-marca-oscuro {
+    color: var(--color-jk-gold);
   }
 
   .jk-header-solid[data-fija] + main {

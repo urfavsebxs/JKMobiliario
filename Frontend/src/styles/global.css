@@ -10,6 +10,10 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Kapakana", "Segoe Script", cursive;
   --font-brand: "Sofia Sans Semi Condensed", "Arial Narrow", sans-serif;
+  /* Solo el wordmark de la cabecera. Es una serif Didone de alto contraste,
+     como el logotipo; no se usa en la interfaz porque a tamaño de texto
+     pequeño los trazos finos se pierden. Para eso está `--font-brand`. */
+  --font-logo: "Playfair Display", "Didot", "Bodoni MT", Georgia, serif;
   --font-label: "Inclusive Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* Paleta de colores */

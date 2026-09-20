@@ -9,8 +9,9 @@ interface Props {
   title: string;
   description?: string;
   navMode?: "overlay" | "solid";
-  /** Wordmark bicolor en la portada ("JK" dorado + "Mobiliario" negro). */
-  wordmarkBicolor?: boolean;
+  /** Fuerza el wordmark a tinta plana (fondos claros donde el dorado no
+   *  contrasta). Por defecto va bicolor en todo el sitio. */
+  wordmarkPlano?: boolean;
   bodyClass?: string;
 }
 
@@ -18,7 +19,7 @@ const {
   title,
   description = "Diseño y mobiliario de alta gama pensado para crear ambientes únicos.",
   navMode = "solid",
-  wordmarkBicolor = false,
+  wordmarkPlano = false,
   bodyClass = "bg-black text-white",
 } = Astro.props;
 ---
@@ -35,13 +36,13 @@ const {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kapakana&family=Sofia+Sans+Semi+Condensed:wght@300;500;700&family=Inclusive+Sans:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kapakana&family=Playfair+Display:wght@500&family=Sofia+Sans+Semi+Condensed:wght@300;500;700&family=Inclusive+Sans:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <title>{title} | JK Mobiliario</title>
   </head>
   <body class={bodyClass}>
-    <Nav mode={navMode} wordmarkBicolor={wordmarkBicolor} />
+    <Nav mode={navMode} wordmarkPlano={wordmarkPlano} />
     <main>
       <slot />
     </main>
