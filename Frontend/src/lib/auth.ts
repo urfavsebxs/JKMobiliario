@@ -38,3 +38,16 @@ export function isAdmin() {
   const u = user.get();
   return u?.role === "admin";
 }
+
+/** El trabajador solo entra a la revisión de comprobantes. */
+export function isTrabajador() {
+  const u = user.get();
+  return u?.role === "trabajador";
+}
+
+/** Destino del panel según el rol (el admin ve todo; el trabajador, una pantalla). */
+export function rutaPanel(rol?: string) {
+  if (rol === "admin") return "/admin";
+  if (rol === "trabajador") return "/admin/comprobantes";
+  return "/";
+}

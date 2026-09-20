@@ -80,9 +80,15 @@ const enlace = "font-medium text-jk-gold-deep underline underline-offset-4 trans
             contenido de sus mensajes.
           </li>
           <li>Los mensajes que escribe en el Asistente IA disponible en este sitio.</li>
+          <li>
+            Las <strong>imágenes que usted nos envía</strong> por WhatsApp, en particular los
+            comprobantes de pago (ver la sección 05).
+          </li>
         </ul>
         <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
-          No solicitamos datos sensibles ni información financiera a través de estos canales.
+          No solicitamos datos sensibles. En particular, <strong>nunca le pediremos</strong> números
+          de tarjeta, contraseñas, claves ni códigos de verificación. Para coordinar un envío solo
+          necesitamos su nombre, ciudad y dirección.
         </p>
       </section>
 
@@ -111,8 +117,7 @@ const enlace = "font-medium text-jk-gold-deep underline underline-offset-4 trans
         </p>
         <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
           Por tratarse de un servicio automatizado, le recomendamos no compartir datos sensibles
-          (documentos de identidad, información financiera o de salud, contraseñas, entre otros) en
-          el chat.
+          (documentos de identidad, información de salud, contraseñas, entre otros) en el chat.
         </p>
       </section>
 
@@ -126,6 +131,49 @@ const enlace = "font-medium text-jk-gold-deep underline underline-offset-4 trans
           Al usar los enlaces de WhatsApp de este sitio, el tratamiento de los datos se rige también
           por las políticas de privacidad de WhatsApp/Meta, que son ajenas a JK Mobiliario. Le
           recomendamos revisarlas antes de escribirnos por ese canal.
+        </p>
+
+        <h3 class="mt-6 font-sans text-[17px] font-semibold text-jk-ink">
+          Comprobantes de pago
+        </h3>
+        <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Cuando usted nos envía por WhatsApp la imagen de un comprobante de pago, tratamos esa
+          imagen y los datos visibles en ella (monto, fecha, entidad financiera, número de
+          referencia y el nombre del titular) con una sola finalidad: <strong>verificar su pago</strong>
+          y, una vez verificado, preparar el envío o la recogida de su pedido.
+        </p>
+        <ul class="mt-3 list-disc space-y-2 pl-6 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          <li>
+            El comprobante se guarda en un <strong>almacenamiento privado</strong>, sin acceso
+            público, y solo lo consultan las personas autorizadas para validar pagos.
+          </li>
+          <li>
+            Para leer los datos del comprobante, la imagen se procesa con un proveedor externo de
+            inteligencia artificial (Google), igual que el chat del Asistente IA.
+          </li>
+          <li>
+            La revisión de su pago puede tardar <strong>hasta 3 días hábiles</strong>. Cuando esté
+            lista, le avisaremos por WhatsApp y entonces comenzamos a preparar su pedido.
+          </li>
+          <li>
+            Este tratamiento es necesario para ejecutar la compraventa y se conserva mientras exista
+            la relación comercial y durante el término legal aplicable.
+          </li>
+          <li>
+            <strong>Nunca le pediremos</strong> números de tarjeta, contraseñas, claves ni códigos de
+            verificación para validar un pago. Si alguien se los pide a nombre de JK Mobiliario, no
+            los comparta y repórtelo a nuestro WhatsApp de atención.
+          </li>
+        </ul>
+        <p class="mt-3 font-sans text-[16px] leading-[1.7] text-jk-ink">
+          Si prefiere no enviar el comprobante por este canal, escríbanos por el
+          <a
+            href={waHref}
+            target={whatsapp ? "_blank" : undefined}
+            rel={whatsapp ? "noopener noreferrer" : undefined}
+            class={enlace}>WhatsApp de atención</a
+          >
+          y coordinamos con usted otra forma de verificar el pago.
         </p>
       </section>
 

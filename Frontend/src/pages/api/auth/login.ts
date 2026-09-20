@@ -53,7 +53,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   });
 
   if (esFormulario) {
-    return redirect(data.data.user.role === "admin" ? "/admin" : "/", 303);
+    const rol = data.data.user.role;
+    const destino = rol === "admin" ? "/admin" : rol === "trabajador" ? "/admin/comprobantes" : "/";
+    return redirect(destino, 303);
   }
 
   return new Response(JSON.stringify(data), { status: 200 });

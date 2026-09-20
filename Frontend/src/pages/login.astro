@@ -214,7 +214,11 @@ const error = Astro.url.searchParams.get("error");
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
 
-        window.location.href = data.data.user.role === "admin" ? "/admin" : "/";
+        // El admin entra al panel completo; el trabajador, a la revisión de
+        // comprobantes, que es lo único que puede ver.
+        const rol = data.data.user.role;
+        window.location.href =
+          rol === "admin" ? "/admin" : rol === "trabajador" ? "/admin/comprobantes" : "/";
       } catch (err) {
         errorDiv.textContent = err instanceof Error ? err.message : "Error al iniciar sesión";
         errorDiv.classList.remove("hidden");

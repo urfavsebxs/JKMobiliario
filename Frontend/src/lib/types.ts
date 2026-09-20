@@ -65,6 +65,43 @@ export interface User {
   role: string;
 }
 
+/** Prioridad de revisión del comprobante, de menor a mayor urgencia. */
+export type NivelAlerta = "ninguno" | "revisar" | "urgente";
+
+export type EstadoComprobante = "pendiente" | "aprobado" | "rechazado";
+
+/** Motivo de rechazo de la lista cerrada del backend. */
+export interface MotivoRechazo {
+  clave: string;
+  etiqueta: string;
+}
+
+/**
+ * Comprobante de pago recibido por WhatsApp.
+ * La imagen NO se referencia por URL: el endpoint exige token, así que se pide
+ * aparte y se muestra como blob (ver AdminComprobantes).
+ */
+export interface Comprobante {
+  _id: string;
+  fecha: string;
+  telefono: string;
+  nombreCliente?: string;
+  producto?: string;
+  monto?: number;
+  bancoOrigen?: string;
+  referenciaPago?: string;
+  fechaPago?: string;
+  estado: EstadoComprobante;
+  alerta: NivelAlerta;
+  motivoAlerta?: string;
+  revisadoPor?: string;
+  fechaRevision?: string;
+  motivoRechazo?: string;
+  notificadoCliente: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthResponse {
   user: User;
   token: string;

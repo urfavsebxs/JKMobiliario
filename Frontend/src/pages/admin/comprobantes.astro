@@ -1,0 +1,51 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminComprobantes from "../../components/react/admin/AdminComprobantes";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+
+// El middleware ya filtra por rol, pero se vuelve a comprobar aquí: esta
+// página no debe depender solo de él (defensa en profundidad) para una
+// pantalla que muestra datos de pago de clientes.
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+let rol = "";
+try {
+  const res = await fetch(`${API_URL}/api/auth/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return Astro.redirect("/login");
+  rol = (await res.json()).data?.role ?? "";
+} catch {
+  return Astro.redirect("/login");
+}
+
+if (rol !== "admin" && rol !== "trabajador") {
+  return Astro.redirect("/");
+}
+---
+
+<Layout title="Comprobantes de pago" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      {
+        rol === "admin" ? (
+          <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">
+            ← Volver al panel
+          </a>
+        ) : null
+      }
+      <h1 class="text-2xl font-bold text-gray-900 mt-1">Comprobantes de pago</h1>
+      <p class="text-gray-600">
+        Revisa los comprobantes que llegaron por WhatsApp, verifica el pago y apruébalo o recházalo.
+        Al guardar, el cliente recibe el aviso por WhatsApp.
+      </p>
+    </div>
+
+    <AdminComprobantes client:load />
+  </div>
+</Layout>
