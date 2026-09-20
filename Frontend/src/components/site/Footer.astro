@@ -20,24 +20,69 @@ const serviceLinks = [
   { label: "Asistente IA", href: "/#contacto", asesor: true },
 ];
 
+/**
+ * Redes del footer.
+ *
+ * `color` es el color con el que la propia red se identifica, no una
+ * aproximación a la paleta del sitio: de lo que se trata es de que cada una se
+ * reconozca de un vistazo. Por eso Facebook rompe con el dorado y el negro del
+ * resto del footer a propósito.
+ */
 const social = [
   {
     icon: "/images/jk/icon-fb.png",
     label: "@jkmobiliario",
     href: "https://web.facebook.com/profile.php?id=100071627034291",
+    color: "#1877f2",
   },
   {
     icon: "/images/jk/icon-ig.png",
     label: "@jkmobiliario_",
     href: "https://www.instagram.com/jkmobiliario_/",
+    // Instagram no tiene un color plano: su marca es el degradado.
+    color: "linear-gradient(45deg, #f58529 0%, #dd2a7b 50%, #8134af 100%)",
   },
   {
     icon: "/images/jk/icon-tiktok.svg",
     label: "@jkmobiliario_",
     href: "https://www.tiktok.com/@jkmobiliario_",
+    // El negro de TikTok desaparecería sobre el fondo negro del footer, así que
+    // se usa el rosa, que es el otro color con el que se lee su marca.
+    color: "#fe2c55",
   },
-  { icon: "/images/jk/icon-wsp.png", label: "324 669 2370", href: waHref },
+  {
+    icon: "/images/jk/icon-wsp.png",
+    label: "324 669 2370",
+    href: waHref,
+    color: "#25d366",
+  },
 ];
+
+/**
+ * Estilo para pintar un icono de un color plano.
+ *
+ * Los cuatro archivos son glifos de UN solo color (el dorado `#c8be98`), con el
+ * fondo transparente. Eso permite usarlos como MÁSCARA en vez de como imagen:
+ * el archivo presta la forma —su canal alfa— y el color lo pone el fondo del
+ * elemento. Así cada red lleva su color de marca sin necesitar un archivo por
+ * color, y sin recurrir a `filter`, que sobre un dorado concreto desplaza el
+ * tono y da colores sucios.
+ *
+ * Si algún día la máscara no cargara, el elemento se vería como un cuadro del
+ * color de marca: feo, pero del tamaño correcto y sin romper la maquetación.
+ */
+const estiloIcono = (icono: string, fondo: string) =>
+  [
+    `-webkit-mask-image: url(${icono})`,
+    `mask-image: url(${icono})`,
+    "-webkit-mask-size: contain",
+    "mask-size: contain",
+    "-webkit-mask-repeat: no-repeat",
+    "mask-repeat: no-repeat",
+    "-webkit-mask-position: center",
+    "mask-position: center",
+    `background: ${fondo}`,
+  ].join("; ");
 
 const linkClass =
   "font-sans text-[15px] font-semibold leading-[normal] text-white transition-opacity hover:opacity-70";
@@ -97,13 +142,10 @@ const linkClass =
                     rel="noopener noreferrer"
                     class="flex items-center gap-[5px] transition-opacity hover:opacity-80"
                   >
-                    <img
-                      src={item.icon}
-                      alt=""
-                      width="38"
-                      height="38"
-                      class="size-[38px] shrink-0 object-contain"
-                      loading="lazy"
+                    <span
+                      aria-hidden="true"
+                      style={estiloIcono(item.icon, item.color)}
+                      class="size-[38px] shrink-0"
                     />
                     <span class="font-sans text-[13px] font-semibold text-white">
                       {item.label}
@@ -130,7 +172,7 @@ const linkClass =
                 loading="lazy"
               />
               <address
-                class="font-sans text-[15px] font-semibold not-italic leading-[normal] text-white"
+                class="font-sans text-[15px] font-semibold not-italic leading-[normal] text-jk-red"
               >
                 Carrera 52 #7 Sur -22<br />Mall providencia<br />Avenida Guayabal<br />Medellín
                 <span

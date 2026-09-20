@@ -24,6 +24,9 @@
   --color-jk-mist: #d9d9d9;
   --color-jk-ink: #121212;
   --color-jk-surface: #f7f7f7;
+  /* El rojo no venía del Figma: se añade para la dirección del footer, que debe
+     leerse como un dato de contacto y no como un enlace más del menú. */
+  --color-jk-red: #e53935;
 }
 
 @layer base {
