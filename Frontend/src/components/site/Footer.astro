@@ -8,6 +8,21 @@ const direccion =
 const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
 const wazeHref = `https://waze.com/ul?q=${encodeURIComponent(direccion)}&navigate=yes`;
 
+/**
+ * El número del bot, formateado para que se lea de un vistazo.
+ *
+ * El `.env` lo guarda en crudo (`573015179340`) porque así lo necesita el
+ * enlace de `wa.me`. Antes la etiqueta estaba escrita a mano aparte, y con el
+ * tiempo quedó desalineada: el footer enseñaba un número y el enlace abría
+ * otro. Derivándola del mismo valor, no pueden volver a separarse.
+ */
+const etiquetaWhatsapp = (numero: string) => {
+  const local = numero.replace(/^57/, ""); // indicativo de Colombia
+  return local.length === 10
+    ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+    : numero;
+};
+
 const navLinks = [
   { label: "Inicio", href: "/" },
   { label: "Catálogo", href: "/catalogo" },
@@ -52,7 +67,8 @@ const social = [
   },
   {
     icon: "/images/jk/icon-wsp.png",
-    label: "324 669 2370",
+    // El número del bot, el mismo que abre el enlace.
+    label: etiquetaWhatsapp(whatsapp) || "WhatsApp",
     href: waHref,
     color: "#25d366",
   },
