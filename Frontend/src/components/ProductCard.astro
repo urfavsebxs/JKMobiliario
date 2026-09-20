@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import type { Product } from "../lib/types";
 import { proxyImageUrl } from "../lib/images";
 import { descuentoAplicable, formatPrice, precioConDescuento, precioTexto } from "../lib/precio";
@@ -7,9 +8,13 @@ interface Props {
   product: Product;
   /** Ruta del catálogo (con sus filtros) para volver desde la ficha. */
   volver?: string;
+  /** Ancho de la tarjeta en píxeles; base del `srcset` (ver `ProductGrid`). */
+  anchoTarjeta?: number;
+  /** Atributo `sizes` que acompaña a ese ancho. */
+  sizes?: string;
 }
 
-const { product, volver } = Astro.props;
+const { product, volver, anchoTarjeta = 381, sizes } = Astro.props;
 
 // Enlace a la ficha: si viene `volver`, se adjunta la ruta del catálogo con un
 // `destacar` para que al regresar quede a la vista esta tarjeta. Se limpia un
@@ -25,6 +30,24 @@ if (volver) {
 }
 
 const imageUrl = proxyImageUrl(product.images[0]);
+// La foto original pesa ~150 KB y mide ~940x1050 px, pero aquí se pinta en una
+// caja de 369x491 (~0,18 MP frente a ~1 MP). `<Image>` la recorta a la
+// proporción de la caja y la reduce, y sirve WebP con `srcset` para que el
+// navegador baje el tamaño que va a usar: medido, 178 KB -> 25 KB por tarjeta.
+// El archivo original no se toca, así que WhatsApp (que solo admite JPEG y
+// PNG) sigue enviando el maestro intacto.
+const proporcion = "369 / 491";
+const ancho2x = anchoTarjeta * 2;
+const sizesImagen = sizes ?? `(min-width: 1024px) ${anchoTarjeta}px, (min-width: 640px) 45vw, 90vw`;
+// La miniatura del carrito se pinta a 64 px (`CarritoUI.tsx`), y el panel la
+// pide a 48 px, pero ambas usaban la foto completa. Se les da una versión de
+// 128 px (2x de 64) por el mismo endpoint de Astro, que además la devuelve
+// WebP: de ~150 KB a ~4 KB.
+const imagenCarrito = imageUrl
+  ? imageUrl.startsWith("/_image")
+    ? imageUrl
+    : `/_image?href=${encodeURIComponent(imageUrl)}&w=128&h=170&f=webp`
+  : "";
 const descuento = descuentoAplicable(product.discountPercent);
 const tieneDescuento = descuento > 0 && product.price > 0;
 const precioFinal = precioConDescuento(product.price, product.discountPercent);
@@ -44,14 +67,21 @@ const nombresColores = colores.map((color) => color.name).join(", ");
 
 <div id={`producto-${product._id}`} class="group relative scroll-mt-28">
   <a href={hrefProducto} class="block">
-    <div class="aspect-[369/491] overflow-hidden rounded-[4px] border border-jk-gold bg-jk-mist">
+    <div
+      class="aspect-[369/491] overflow-hidden rounded-[4px] border border-jk-gold bg-jk-mist"
+      style={`aspect-ratio: ${proporcion}`}
+    >
       {
         imageUrl ? (
-          <img
+          <Image
             src={imageUrl}
             alt={product.name}
-            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            width={anchoTarjeta}
+            height={491}
+            widths={[anchoTarjeta, ancho2x]}
+            sizes={sizesImagen}
             loading="lazy"
+            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : null
       }
@@ -120,7 +150,7 @@ const nombresColores = colores.map((color) => color.name).join(", ");
     data-nombre={product.name}
     data-categoria={product.category}
     data-precio={precioFinal > 0 ? String(precioFinal) : ""}
-    data-imagen={imageUrl}
+    data-imagen={imagenCarrito}
     aria-label={`Agregar ${product.name} al carrito`}
     class="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-jk-gold bg-black/70 text-white backdrop-blur-sm transition-colors hover:bg-jk-gold hover:text-jk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jk-gold"
   >

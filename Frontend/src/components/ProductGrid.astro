@@ -6,13 +6,32 @@ interface Props {
   products: Product[];
   /** Ruta del catálogo (con sus filtros) que se propaga a cada tarjeta. */
   volver?: string;
+  /**
+   * Ancho real de la tarjeta en píxeles según el contenedor que la aloja.
+   * Es la base del `srcset`: la rejilla del catálogo es más estrecha que la
+   * del inicio porque su `padding` lateral es mucho mayor (131 px frente a
+   * 20 px), así que si se usara el mismo valor las dos pedirían más bytes de
+   * los que pueden pintar. Se omite en el inicio, donde manda el defecto.
+   */
+  anchoTarjeta?: number;
+  /** Atributo `sizes` que acompaña a ese ancho. */
+  sizes?: string;
 }
 
-const { products, volver } = Astro.props;
+const { products, volver, anchoTarjeta, sizes } = Astro.props;
 ---
 
 <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[36px]">
-  {products.map((product) => <ProductCard product={product} volver={volver} />)}
+  {
+    products.map((product) => (
+      <ProductCard
+        product={product}
+        volver={volver}
+        anchoTarjeta={anchoTarjeta}
+        sizes={sizes}
+      />
+    ))
+  }
 </div>
 
 {

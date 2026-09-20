@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import { proxyImageUrl } from "../lib/images";
 
 interface Props {
@@ -15,9 +16,13 @@ const proxiedImages = images.map((img) => proxyImageUrl(img));
 <div class="space-y-4">
   <div class="aspect-square rounded-lg overflow-hidden bg-gray-100" id="main-image-container">
     {proxiedImages[0] ? (
-      <img
+      <Image
         src={proxiedImages[0]}
         alt={name}
+        width={520}
+        height={520}
+        widths={[520, 1040]}
+        sizes="(min-width: 1024px) 520px, 90vw"
         class="w-full h-full object-cover"
         id="main-image"
       />
@@ -35,10 +40,10 @@ const proxiedImages = images.map((img) => proxyImageUrl(img));
       {proxiedImages.map((image, index) => (
         <button
           class="aspect-square rounded-md overflow-hidden bg-gray-100 border-2 border-transparent hover:border-gray-300 transition-colors thumbnail-btn"
-          data-image={image}
+          data-image={`/_image?href=${encodeURIComponent(image)}&w=1040&h=1040&f=webp`}
         >
           <img
-            src={image}
+            src={`/_image?href=${encodeURIComponent(image)}&w=160&h=160&f=webp`}
             alt={`${name} - Imagen ${index + 1}`}
             class="w-full h-full object-cover"
             loading="lazy"

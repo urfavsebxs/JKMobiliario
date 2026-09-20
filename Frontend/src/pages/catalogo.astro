@@ -184,7 +184,12 @@ const waMedidasHref = whatsapp
         </div>
       )}
 
-      <ProductGrid products={productosPagina} volver={volver} />
+      <ProductGrid
+        products={productosPagina}
+        volver={volver}
+        anchoTarjeta={321}
+        sizes="(min-width: 1024px) 321px, (min-width: 640px) 45vw, 90vw"
+      />
 
       <Paginacion
         pagina={pagina}

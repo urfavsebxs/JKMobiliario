@@ -29,6 +29,17 @@ export default defineConfig({
   integrations: [react()],
   output: 'server',
   adapter: vercel(),
+  // Las fotos de producto viven en MinIO, no en el repo, así que hay que
+  // autorizar ese origen para que `<Image>` pueda optimizarlas. Sin esto,
+  // Astro rechaza la URL remota. El endpoint `/_image` recorta, redimensiona y
+  // sirve WebP con `Cache-Control: max-age=31536000`, lo que baja cada tarjeta
+  // de ~150 KB a 25 KB y da caché de un año, que MinIO no envía por su cuenta.
+  // El original queda intacto: WhatsApp solo admite JPEG y PNG.
+  image: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'api.jkmobiliario.digital', pathname: '/media/**' },
+    ],
+  },
   server: {
     allowedHosts,
   },
