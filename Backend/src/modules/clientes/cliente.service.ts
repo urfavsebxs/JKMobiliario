@@ -53,7 +53,8 @@ export const normalizarIdentificador = (canal: CanalCliente, valor: string): str
 
 /**
  * Lista las fichas para el panel, las más recientes primero.
- * Se excluyen los campos pesados: el panel solo pinta el resumen.
+ * Devuelve el documento entero a propósito: el panel abre el detalle desde esta
+ * misma lista y necesita `notas`, que es lo que el dueño edita.
  */
 export const listarClientes = async (): Promise<ICliente[]> => {
   return Cliente.find().sort({ ultimoContacto: -1, createdAt: -1 }).limit(300);
@@ -73,6 +74,12 @@ export const obtenerCliente = async (id: string): Promise<ICliente> => {
  * cliente es nuevo" es una respuesta normal y esperada, y un 404 obligaría a
  * n8n a distinguirla de una caída del backend, que es justo lo que no puede
  * hacer.
+ *
+ * **`notas` se excluye a propósito.** Esta es la lectura que la IA mete en su
+ * prompt, y `notas` es el campo privado del dueño. Sin excluirlo, lo que él
+ * anota a mano ("no fiar", "devolvió una vez", "es la señora del taller")
+ * terminaría dentro del prompt y podría salir en una respuesta al cliente. El
+ * panel sí las ve, pero por `obtenerCliente`, que es otra ruta y es de admin.
  */
 export const obtenerFicha = async (
   canal: CanalCliente,
@@ -80,7 +87,7 @@ export const obtenerFicha = async (
 ): Promise<ICliente | null> => {
   const clave = normalizarIdentificador(canal, identificador);
   if (!clave) throw createAppError("El identificador es obligatorio", 400);
-  return Cliente.findOne({ canal, identificador: clave });
+  return Cliente.findOne({ canal, identificador: clave }).select("-notas");
 };
 
 /**
