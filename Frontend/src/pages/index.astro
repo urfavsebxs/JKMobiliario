@@ -175,8 +175,8 @@ const categorias = grupos.map((grupo) => ({
            descarga un archivo que no va a usar. -->
       <video
         class="jk-zoom h-full w-full object-cover opacity-[0.77] lg:hidden"
-        width="528"
-        height="944"
+        width="720"
+        height="1206"
         autoplay
         loop
         muted
@@ -188,19 +188,21 @@ const categorias = grupos.map((grupo) => ({
         disablepictureinpicture
         data-jk-hero-video
       >
-        <source media="(max-width: 1023px)" src="/videos/hero-mobiliario.webm" type="video/webm" />
+        <!-- Un solo origen, a propósito: se codificó también en VP9 y a igual
+             peso rinde lo mismo (25,8 dB contra 25,7 dB del H.264, medidos
+             contra el máster), así que el WebM solo engordaba el repo 3 MB. -->
         <source media="(max-width: 1023px)" src="/videos/hero-mobiliario.mp4" type="video/mp4" />
       </video>
 
-      <!-- Escritorio: la imagen, no el vídeo. El vídeo es vertical (528x944) y
+      <!-- Escritorio: la imagen, no el vídeo. El vídeo es vertical (720x1206) y
            este hero es horizontal y de ancho completo: con `object-cover`, un
-           9:16 metido en 1440x1000 se amplía 2,7x y solo se ve el 39% central
-           de su altura. De ahí la borrosidad, y no tiene arreglo recomprimiendo:
-           medido contra el máster, el WebM ya rinde a 38,6 dB, que es su techo
-           (VP9 sin pérdida es idéntico al máster). Un máster de 528px no da más.
-           En cambio hero.jpg es 1600x1067, o sea horizontal: a 1440px encaja a
-           0,94x, sin ampliar. En móvil el vídeo sí se queda, porque ahí se
-           reduce (0,74x a 390px) y se ve nítido. -->
+           0,6:1 metido en 1440x1000 se amplía 2x y solo se ve el 41% central de
+           su altura. De ahí la borrosidad, y no tiene arreglo recomprimiendo:
+           medido en RGB y fotograma a fotograma, el MP4 rinde 32,9 dB de PSNR
+           contra el máster, que es su techo con un máster de 720px. En cambio
+           hero.jpg es 1600x1067, o sea horizontal: a 1440px encaja a 0,94x, sin
+           ampliar. En móvil el vídeo sí se queda, porque ahí se reduce (1,85x a
+           390px) y se ve nítido. -->
       <Image
         src={hero}
         alt=""
