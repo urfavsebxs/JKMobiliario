@@ -2,6 +2,12 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 
+import {
+  CATEGORIAS_POR_DEFECTO as CATEGORIAS_CATALOGO,
+  normalizarCategoria,
+  slugDeCategoria,
+} from "../../lib/categorias";
+
 /**
  * Proxy del chat "Asesor IA" hacia la API de Gemini.
  *
@@ -279,6 +285,41 @@ function enlaceWhatsApp(): string {
   return `https://wa.me/${numeroWhatsApp()}?text=${encodeURIComponent(MENSAJE_WHATSAPP)}`;
 }
 
+/**
+ * Enlaces de catálogo que el asesor puede enviar: uno por cada grupo y cada
+ * categoría que HOY tienen productos. Se derivan del catálogo real y no de la
+ * lista de categorías del negocio, porque una categoría sin productos no da
+ * 404: pinta "Aún no tenemos productos en esta categoría" y el cliente acaba
+ * en una página vacía sin que nada delate el error.
+ */
+function enlacesDeCatalogo(catalogo: ResultadoCatalogo): { etiqueta: string; url: string }[] {
+  const grupoDe = new Map(
+    CATEGORIAS_CATALOGO.map((categoria) => [normalizarCategoria(categoria.name), categoria.group]),
+  );
+  const vistos = new Set<string>();
+  const enlaces: { etiqueta: string; url: string }[] = [];
+
+  const agregar = (nombre: string) => {
+    const clave = normalizarCategoria(nombre);
+    // "Otros" es el cajón de sastre: no es un destino que se ofrezca.
+    if (!clave || clave === "otros" || vistos.has(clave)) return;
+    vistos.add(clave);
+    enlaces.push({
+      etiqueta: `Catálogo de ${nombre}`,
+      url: `${URL_CATALOGO}/${slugDeCategoria(nombre)}`,
+    });
+  };
+
+  // Primero los grupos ("Camas", "Mesas"), que es como lo pide la gente…
+  for (const categoria of catalogo.categorias) {
+    agregar(grupoDe.get(normalizarCategoria(categoria)) ?? categoria);
+  }
+  // …y después cada categoría concreta, para quien pide "camas minimalistas".
+  for (const categoria of catalogo.categorias) agregar(categoria);
+
+  return enlaces;
+}
+
 function construirPrompt(catalogo: ResultadoCatalogo): string {
   const numero = numeroWhatsApp();
   const enlace = enlaceWhatsApp();
@@ -295,6 +336,17 @@ function construirPrompt(catalogo: ResultadoCatalogo): string {
   const bloqueCatalogo = tieneCatalogo
     ? `CATÁLOGO ACTUAL DE PRODUCTOS (una línea por producto: Nombre — Categoría — Precio — Medidas — Descuento):\n${catalogo.texto}`
     : "CATÁLOGO ACTUAL: no disponible.";
+
+  // Solo se ofrecen enlaces de categoría que existen hoy. Si el catálogo no
+  // cargó (o no llegó ninguna categoría), el modelo no recibe ninguno y cae al
+  // enlace general en vez de inventarse la URL de una categoría vacía.
+  const enlacesCatalogo = enlacesDeCatalogo(catalogo);
+  const bloqueEnlacesCatalogo =
+    enlacesCatalogo.length > 0
+      ? `ENLACES DE CATÁLOGO POR CATEGORÍA (usa exactamente estas URLs cuando el usuario pida esa categoría o ese grupo; no construyas ninguna otra):\n${enlacesCatalogo
+          .map((enlace) => `- ${enlace.etiqueta}: ${enlace.url}`)
+          .join("\n")}`
+      : "ENLACES DE CATÁLOGO POR CATEGORÍA: no disponibles ahora mismo. No inventes URLs de categoría: usa el enlace del catálogo completo.";
 
   const reglaCatalogo = tieneCatalogo
     ? "2. El catálogo adjunto es la ÚNICA fuente válida para nombres, precios, medidas y descuentos. Si algo no aparece allí, dilo con claridad y remite al enlace del catálogo o a WhatsApp: nunca inventes precios, disponibilidad, plazos ni características."
@@ -319,12 +371,14 @@ ENLACES OFICIALES (usa solo estos; nunca inventes URLs y escribe siempre la etiq
 - TikTok: ${URL_TIKTOK}
 - Ubicación en Google Maps: ${urlMapa}
 
+${bloqueEnlacesCatalogo}
+
 ${bloqueCatalogo}
 
 REGLAS OBLIGATORIAS:
 1. Responde siempre en español de Colombia, con tono cercano, claro y profesional. Usa máximo 120 palabras y, si ayuda, bullets cortos. Escribe en texto plano: no uses formato Markdown (nada de **negritas**, ## títulos ni acentos graves).
 ${reglaCatalogo}
-3. Si el usuario pide el catálogo, responde en una línea breve y SOLO con el enlace al catálogo, precedido de la etiqueta "Catálogo:" (por ejemplo: "Catálogo: ${URL_CATALOGO}"); puedes mencionar que puede navegar por categorías, pero no incluyas invitación ni enlace de WhatsApp, salvo que en el mismo mensaje pregunte dónde cotizar o comprar.
+3. Si el usuario pide el catálogo, o el de una categoría o un grupo concreto ("camas", "mesas", "sofás"), responde en una línea breve y SOLO con el enlace de "ENLACES DE CATÁLOGO POR CATEGORÍA" que corresponda, con su etiqueta tal como aparece ahí (por ejemplo: "Catálogo de Camas: <url>"). Usa el enlace más específico que exista en esa lista; si lo que pide no está, usa el del catálogo completo, y nunca construyas ni inventes una URL de categoría. Puedes mencionar que puede navegar por categorías, pero no incluyas invitación ni enlace de WhatsApp, salvo que en el mismo mensaje pregunte dónde cotizar o comprar.
 4. Siempre que envíes un enlace (catálogo, WhatsApp, redes sociales o ubicación), escribe primero la etiqueta o el nombre del destino y dos puntos, y a continuación la URL completa en la misma línea, en texto plano y sin Markdown ni paréntesis. Ejemplos: "Instagram: ${URL_INSTAGRAM}", "WhatsApp: ${enlace}" o "Catálogo: ${URL_CATALOGO}". Nunca envíes una URL suelta sin etiqueta.
 5. Si el usuario pide las redes sociales (plural o genérico), responde listando las tres redes, cada una con su nombre y su enlace en su propia línea: "Instagram: ${URL_INSTAGRAM}", "Facebook: ${URL_FACEBOOK}" y "TikTok: ${URL_TIKTOK}". No envíes URLs sueltas sin etiqueta.
 6. Si el usuario quiere comprar, cotizar, pagar, consultar entrega, disponibilidad o precio final, o pregunta dónde puede cotizar o comprar, responde breve e incluye SIEMPRE el enlace de WhatsApp precedido de su etiqueta, "WhatsApp: ${enlace}", y aclara que un asesor humano confirma la cotización y los tiempos.

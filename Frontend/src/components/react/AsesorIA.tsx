@@ -70,13 +70,23 @@ function limpiarFormato(texto: string): string {
 // ─── Linkificado de URLs en los mensajes ─────────────────────────────
 // Lógica pura (sin React) para poder probarla aislada: divide el texto en
 // segmentos de texto y URLs, separando la puntuación final que quede pegada
-// (por ejemplo el punto de fin de frase o el paréntesis de cierre).
+// (por ejemplo el punto de fin de frase o el paréntesis de cierre) y sacando
+// aparte la etiqueta que el asesor escribe delante de cada enlace.
 type SegmentoTexto =
   | { tipo: "texto"; valor: string }
-  | { tipo: "enlace"; url: string };
+  | { tipo: "enlace"; url: string; etiqueta?: string };
 
 const URL_REGEX = /(https?:\/\/[^\s<>"]+)/g;
 const PUNTUACION_FINAL = /[.,;:)]+$/;
+
+/**
+ * Etiqueta que precede a una URL: "Catálogo de Camas: <url>" -> "Catálogo de
+ * Camas". El tope de 48 caracteres y la exclusión de ":" y de los saltos de
+ * línea son deliberados: si el asesor escribe una frase entera antes de los dos
+ * puntos, no se convierte en un enlace de párrafo (se cae al dominio). El `\s*$`
+ * tolera que la URL vaya en la línea siguiente.
+ */
+const ETIQUETA_ANTES_DE_URL = /([^\n:]{1,48}):\s*$/;
 
 function segmentarEnlaces(texto: string): SegmentoTexto[] {
   const segmentos: SegmentoTexto[] = [];
@@ -84,13 +94,26 @@ function segmentarEnlaces(texto: string): SegmentoTexto[] {
 
   for (const coincidencia of texto.matchAll(URL_REGEX)) {
     const inicio = coincidencia.index ?? 0;
-    if (inicio > indice) segmentos.push({ tipo: "texto", valor: texto.slice(indice, inicio) });
 
     let url = coincidencia[0];
     const puntuacion = url.match(PUNTUACION_FINAL)?.[0] ?? "";
     if (puntuacion) url = url.slice(0, -puntuacion.length);
 
-    if (url) segmentos.push({ tipo: "enlace", url });
+    // El texto anterior a la URL puede terminar en "Etiqueta:": esa etiqueta
+    // pasa a ser el texto visible del enlace, así el cliente lee a dónde va en
+    // vez de una palabra genérica. Lo que quede por delante sigue siendo texto.
+    const previo = inicio > indice ? texto.slice(indice, inicio) : "";
+    const marca = previo.match(ETIQUETA_ANTES_DE_URL);
+
+    if (marca && marca[1].trim()) {
+      const etiqueta = marca[1].trim();
+      const antes = previo.slice(0, previo.length - marca[0].length);
+      if (antes) segmentos.push({ tipo: "texto", valor: antes });
+      if (url) segmentos.push({ tipo: "enlace", url, etiqueta });
+    } else {
+      if (previo) segmentos.push({ tipo: "texto", valor: previo });
+      if (url) segmentos.push({ tipo: "enlace", url });
+    }
 
     // La puntuación descartada queda fuera del enlace: el siguiente segmento
     // de texto la recoge junto al resto (así ", luego" es un solo segmento).
@@ -118,9 +141,10 @@ const CLASE_ENLACE_USUARIO =
   "font-medium text-blue-800 underline hover:text-blue-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800";
 
 /**
- * Renderiza el texto de un mensaje como nodos React, sin inyectar HTML:
- * las URLs se convierten en enlaces con el texto visible "Link" (descriptivo
- * vía `aria-label`) y el resto se mantiene como texto plano.
+ * Renderiza el texto de un mensaje como nodos React, sin inyectar HTML: las
+ * URLs se convierten en enlaces cuyo texto visible es la etiqueta que el asesor
+ * escribió delante ("Catálogo de Camas: <url>" -> "Catálogo de Camas") o, si no
+ * la hay, el dominio de destino. El resto se mantiene como texto plano.
  */
 function TextoConEnlaces({
   texto,
@@ -146,10 +170,14 @@ function TextoConEnlaces({
             href={segmento.url}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Abrir enlace a ${dominioDe(segmento.url)}`}
+            aria-label={
+              segmento.etiqueta
+                ? `${segmento.etiqueta} — abre ${dominioDe(segmento.url)}`
+                : `Abrir enlace a ${dominioDe(segmento.url)}`
+            }
             className={claseEnlace}
           >
-            Link
+            {segmento.etiqueta ?? dominioDe(segmento.url)}
           </a>
         ) : (
           segmento.valor
