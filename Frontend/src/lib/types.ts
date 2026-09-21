@@ -133,6 +133,51 @@ export interface Comprobante {
   updatedAt: string;
 }
 
+/** Canal por el que escribe el cliente. Cada uno tiene su propia ficha. */
+export type CanalCliente = "whatsapp" | "messenger" | "instagram";
+
+/** Lo último que compró, tal como lo recuerda el asesor. */
+export interface UltimaCompraCliente {
+  producto?: string;
+  monto?: number;
+  fecha?: string;
+}
+
+export interface ReclamoCliente {
+  /** `false` explícito = el dueño lo cerró; ausente = nunca hubo reclamo. */
+  activo?: boolean;
+  detalle?: string;
+  fecha?: string;
+}
+
+/**
+ * Ficha de cliente: lo que el asesor recuerda de quien vuelve a escribir.
+ *
+ * La escribe un paso automático del flujo de n8n después de cada respuesta
+ * (nombre, resumen, última compra, reclamo, etiquetas), salvo `notas`, que es
+ * el campo que el dueño escribe a mano aquí y la IA no puede tocar.
+ */
+export interface Cliente {
+  _id: string;
+  canal: CanalCliente;
+  /** Teléfono normalizado (solo dígitos) en WhatsApp; PSID/IGSID en el resto. */
+  identificador: string;
+  /** La forma cruda tal como llegó, para depurar un fallo de normalización. */
+  identificadorOriginal?: string;
+  nombre?: string;
+  nombrePerfil?: string;
+  resumen?: string;
+  ultimaCompra?: UltimaCompraCliente;
+  reclamo?: ReclamoCliente;
+  etiquetas: string[];
+  /** Solo editable desde este panel. */
+  notas?: string;
+  ultimoContacto?: string;
+  mensajesTotales: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthResponse {
   user: User;
   token: string;

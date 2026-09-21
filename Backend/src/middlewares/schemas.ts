@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ROLES } from "../models/User";
+import { CANALES_CLIENTE } from "../models/Cliente";
 import { LARGO_MINIMO_PASSWORD } from "../lib/passwords";
 
 // ─── Auth ────────────────────────────────────────────────────────────
@@ -333,4 +334,73 @@ export const revisarComprobanteSchema = z
   .refine((data) => data.estado !== "rechazado" || !!data.motivoRechazo, {
     message: "El motivo es obligatorio al rechazar",
     path: ["motivoRechazo"],
+  });
+
+// ─── Clientes (ficha) ────────────────────────────────────────────────
+
+/**
+ * GET /api/clientes/ficha — la lectura que hace n8n antes de responder.
+ * El canal se valida contra la lista real del modelo, no contra una copia.
+ */
+export const fichaQuerySchema = z.object({
+  canal: z.enum(CANALES_CLIENTE),
+  identificador: z.string().min(1, "El identificador es obligatorio").max(100),
+});
+
+/**
+ * POST /api/clientes/ficha — el upsert del paso automático de n8n.
+ *
+ * `.strict()` es deliberado y es la pieza clave: hace que un campo no
+ * declarado **falle con 400** en vez de ignorarse en silencio. En particular
+ * `notas` no está aquí a propósito — es el campo que el dueño escribe a mano
+ * en el panel, y este upsert corre en cada mensaje del cliente. Si se colara,
+ * el paso automático borraría lo anotado a mano en el mensaje siguiente.
+ */
+export const fichaUpsertSchema = z
+  .object({
+    canal: z.enum(CANALES_CLIENTE),
+    identificador: z.string().min(1, "El identificador es obligatorio").max(100),
+    /** La forma cruda, para poder depurar un fallo de normalización. */
+    identificadorOriginal: z.string().max(100).optional(),
+    nombre: z.string().max(200).optional(),
+    nombrePerfil: z.string().max(200).optional(),
+    resumen: z.string().max(1000).optional(),
+    ultimaCompra: z
+      .object({
+        producto: z.string().max(300).optional(),
+        monto: z.coerce.number().min(0).optional(),
+        fecha: z.coerce.date().optional(),
+      })
+      .optional(),
+    reclamo: z
+      .object({
+        activo: z.boolean().optional(),
+        detalle: z.string().max(1000).optional(),
+        fecha: z.coerce.date().optional(),
+      })
+      .optional(),
+    etiquetas: z.array(z.string().max(60)).max(20).optional(),
+  })
+  .strict();
+
+/**
+ * PATCH /api/clientes/:id — la corrección del dueño desde el panel.
+ * Aquí sí se acepta `notas`.
+ */
+export const updateClienteSchema = z
+  .object({
+    nombre: z.string().max(200).optional(),
+    notas: z.string().max(2000).optional(),
+    etiquetas: z.array(z.string().max(60)).max(20).optional(),
+    reclamo: z
+      .object({
+        activo: z.boolean().optional(),
+        detalle: z.string().max(1000).optional(),
+      })
+      .optional(),
+  })
+  .strict()
+  .refine((data) => Object.values(data).some((v) => v !== undefined), {
+    message: "No hay nada que actualizar",
+    path: ["nombre"],
   });

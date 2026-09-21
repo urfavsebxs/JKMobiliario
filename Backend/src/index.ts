@@ -11,6 +11,7 @@ import authRoutes from "./modules/auth/auth.routes";
 import productRoutes from "./modules/products/product.routes";
 import categoryRoutes from "./modules/categories/category.routes";
 import comprobanteRoutes from "./modules/comprobantes/comprobante.routes";
+import clienteRoutes from "./modules/clientes/cliente.routes";
 import userRoutes from "./modules/users/user.routes";
 
 const app = express();
@@ -85,6 +86,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/comprobantes", comprobanteRoutes);
+app.use("/api/clientes", clienteRoutes);
 app.use("/api/users", userRoutes);
 
 // ─── Global error handler (must be last) ─────────────────────────────

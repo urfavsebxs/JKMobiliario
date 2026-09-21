@@ -64,6 +64,19 @@ const routes: RouteConfig[] = [
   { method: "GET", path: "/api/comprobantes/:id", access: "trabajador" },
   { method: "GET", path: "/api/comprobantes/:id/imagen", access: "trabajador" },
   { method: "PATCH", path: "/api/comprobantes/:id", access: "trabajador" },
+
+  // Fichas de cliente (lo que el asesor recuerda de quien vuelve a escribir).
+  // `service`: las llama n8n — la lectura antes de responder y el upsert del
+  // paso automático después. n8n no tiene JWT, así que sin declararlas aquí
+  // recibiría un 401 del nivel por defecto.
+  { method: "GET", path: "/api/clientes/ficha", access: "service" },
+  { method: "POST", path: "/api/clientes/ficha", access: "service" },
+  // `trabajador`: consultar la ficha es parte de atender al cliente.
+  { method: "GET", path: "/api/clientes", access: "trabajador" },
+  { method: "GET", path: "/api/clientes/:id", access: "trabajador" },
+  // `admin`: corregir el dato del cliente es del dueño, no de cualquiera que
+  // atienda. Si algún día un trabajador debe anotar, se cambia aquí y ya.
+  { method: "PATCH", path: "/api/clientes/:id", access: "admin" },
 ];
 
 const matchRoute = (configPath: string, requestPath: string): boolean => {
