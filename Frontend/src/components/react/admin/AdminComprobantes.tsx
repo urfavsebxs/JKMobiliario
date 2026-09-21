@@ -39,6 +39,18 @@ const formatearMonto = (monto?: number): string => {
 };
 
 /**
+ * Nombre con el que identificar al cliente.
+ *
+ * El comprobante casi nunca trae el nombre de quien paga —lo que trae es el
+ * del comercio—, así que si el análisis no lo leyó se cae al del perfil de
+ * WhatsApp, que es un dato real del cliente y ya viene guardado. Es el mismo
+ * criterio que `nombreParaSaludo` en el backend, para que el panel y la
+ * plantilla de WhatsApp no digan nombres distintos.
+ */
+const nombreVisible = (comprobante: Comprobante): string =>
+  comprobante.nombreCliente?.trim() || comprobante.nombrePerfilWhatsApp?.trim() || "";
+
+/**
  * Pantalla de revisión de comprobantes de pago (rol trabajador).
  *
  * Muestra la lista, y al abrir uno la imagen servida desde el bucket privado
@@ -172,8 +184,8 @@ export default function AdminComprobantes() {
 
     const confirmacion =
       estado === "aprobado"
-        ? `¿Aprobar el pago de ${comprobante.nombreCliente || comprobante.telefono}? Se le avisará por WhatsApp.`
-        : `¿Rechazar el comprobante de ${comprobante.nombreCliente || comprobante.telefono}? Se le avisará por WhatsApp con el motivo.`;
+        ? `¿Aprobar el pago de ${nombreVisible(comprobante) || comprobante.telefono}? Se le avisará por WhatsApp.`
+        : `¿Rechazar el comprobante de ${nombreVisible(comprobante) || comprobante.telefono}? Se le avisará por WhatsApp con el motivo.`;
     if (!window.confirm(confirmacion)) return;
 
     setAviso(null);
@@ -248,7 +260,7 @@ export default function AdminComprobantes() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                {seleccionado.nombreCliente || "Cliente sin nombre"}
+                {nombreVisible(seleccionado) || "Cliente sin nombre"}
               </h2>
               <p className="text-sm text-gray-500">
                 {seleccionado.telefono} · recibido el {formatearFecha(seleccionado.createdAt)}
@@ -279,7 +291,7 @@ export default function AdminComprobantes() {
                 <a href={imagenUrl} target="_blank" rel="noopener noreferrer">
                   <img
                     src={imagenUrl}
-                    alt={`Comprobante de ${seleccionado.nombreCliente || seleccionado.telefono}`}
+                    alt={`Comprobante de ${nombreVisible(seleccionado) || seleccionado.telefono}`}
                     className="max-h-[28rem] w-full rounded-lg border border-gray-200 object-contain"
                   />
                 </a>
@@ -463,7 +475,7 @@ export default function AdminComprobantes() {
                   >
                     <td className="px-6 py-4 text-sm">
                       <p className="font-medium text-gray-900">
-                        {comprobante.nombreCliente || "Sin nombre"}
+                        {nombreVisible(comprobante) || "Sin nombre"}
                       </p>
                       <p className="text-gray-500">{comprobante.telefono}</p>
                     </td>
@@ -499,7 +511,7 @@ export default function AdminComprobantes() {
                         type="button"
                         onClick={() => void abrirDetalle(comprobante)}
                         aria-label={`Revisar comprobante de ${
-                          comprobante.nombreCliente || comprobante.telefono
+                          nombreVisible(comprobante) || comprobante.telefono
                         }`}
                         className="text-gray-900 transition-colors hover:text-gray-600"
                       >

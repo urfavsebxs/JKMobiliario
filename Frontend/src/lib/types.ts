@@ -111,6 +111,12 @@ export interface Comprobante {
   fecha: string;
   telefono: string;
   nombreCliente?: string;
+  /**
+   * Nombre del perfil de WhatsApp del cliente. Los comprobantes casi nunca
+   * traen el nombre de quien paga (lo que traen es el del comercio), así que
+   * este es el dato con el que se identifica al cliente en el panel.
+   */
+  nombrePerfilWhatsApp?: string;
   producto?: string;
   monto?: number;
   bancoOrigen?: string;
