@@ -13,3 +13,7 @@ Frontend/AGENTS.md
 Frontend/README.md
 .agents/
 skills-lock.json
+# `ops/` guarda scripts de operación, que sí se versionan; pero los respaldos de
+# credenciales que se dejan ahí al lado (el token de Messenger, por ejemplo) no.
+ops/*token*.txt
+ops/*respaldo*.txt
