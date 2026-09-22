@@ -268,6 +268,42 @@ const linkClass =
           </details>
         </div>
       </div>
+
+      <!--
+        Crédito del desarrollador.
+
+        Se usa el logotipo de TuSoft en lugar de solo texto: da más peso visual
+        que un enlace suelto y comunica quién construyó el sistema. El símbolo va
+        en el dorado de JK para integrarse con el footer, no en el azul de TuSoft
+        —que chocaría con la paleta del sitio.
+      -->
+      <div class="border-t border-white/25 py-6">
+        <a
+          href="https://tusoft.tech"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2.5 transition-opacity hover:opacity-75"
+          aria-label="TuSoft S.A.S — sitio del desarrollador"
+        >
+          <svg
+            viewBox="0 0 32 32"
+            width="20"
+            height="20"
+            aria-hidden="true"
+            class="shrink-0"
+          >
+            <rect x="0" y="1" width="9.3" height="9.3" rx="2.6" fill="currentColor" class="text-jk-gold"></rect>
+            <rect x="10.4" y="1" width="9.3" height="9.3" rx="2.6" fill="currentColor" class="text-jk-gold"></rect>
+            <rect x="21.7" y="1" width="9.3" height="9.3" rx="2.6" fill="currentColor" class="text-jk-red"></rect>
+            <rect x="10.4" y="11.4" width="9.3" height="9.3" rx="2.6" fill="currentColor" class="text-jk-gold"></rect>
+            <rect x="10.4" y="21.7" width="9.3" height="9.3" rx="2.6" fill="currentColor" class="text-jk-gold-muted"></rect>
+          </svg>
+          <span class="font-sans text-[13px] leading-[normal] text-white/70">
+            Powered by
+            <span class="font-semibold text-jk-gold">TuSoft S.A.S</span>
+          </span>
+        </a>
+      </div>
     </div>
   </div>
 </footer>
