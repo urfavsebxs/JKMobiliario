@@ -58,5 +58,12 @@ router.patch(
   validateBody(revisarComprobanteSchema),
   comprobanteController.revisar
 );
+// Reintento del aviso al cliente cuando el primero no salió. Va aparte del
+// PATCH porque la revisión es final: esto no la reabre, solo reenvía.
+router.post(
+  "/:id/notificar",
+  validateParam("id", objectIdParamSchema),
+  comprobanteController.renotificar
+);
 
 export default router;

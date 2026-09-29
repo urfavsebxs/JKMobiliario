@@ -296,11 +296,53 @@ export const revisarComprobante = async (
   // cerrada, para que el webhook no tenga que conocer las claves internas.
   return {
     comprobante,
-    mensajeCliente:
-      data.estado === "rechazado"
-        ? mensajeClienteDeRechazo(data.motivoRechazo as string)
-        : MENSAJE_APROBADO,
+    mensajeCliente: mensajeParaCliente(comprobante),
   };
+};
+
+/**
+ * Texto que recibe el cliente para el estado ya resuelto de un comprobante.
+ * Un solo sitio para el mensaje, porque lo usan tanto la revisión como el
+ * reintento del aviso (y si divergieran, un reintento diría otra cosa).
+ */
+const mensajeParaCliente = (comprobante: IComprobante): string =>
+  comprobante.estado === "rechazado"
+    ? mensajeClienteDeRechazo(comprobante.motivoRechazo as string)
+    : MENSAJE_APROBADO;
+
+/**
+ * Reintenta el aviso al cliente de un comprobante ya revisado.
+ *
+ * Existe porque `notificarRevision` es best-effort: si n8n estaba caído o el
+ * envío falló, la revisión quedó guardada y el cliente sin avisar. Sin esto el
+ * único camino era escribirle a mano, y el comprobante se quedaba marcado como
+ * no notificado para siempre — que es justo lo que pasó con el primer aviso
+ * que salió en producción.
+ *
+ * No toca el estado de la revisión: la decisión ya es firme. Lo único que
+ * cambia es si el aviso salió.
+ */
+export const renotificarComprobante = async (id: string): Promise<IComprobante> => {
+  const comprobante = await Comprobante.findById(id);
+  if (!comprobante) {
+    throw createAppError("Comprobante no encontrado", 404);
+  }
+  if (comprobante.estado === "pendiente") {
+    throw createAppError("El comprobante todavía no se ha revisado", 409);
+  }
+
+  const notificado = await notificarRevision({
+    comprobanteId: comprobante._id.toString(),
+    telefono: comprobante.telefono,
+    phoneNumberId: comprobante.phoneNumberId,
+    nombreCliente: nombreParaSaludo(comprobante),
+    estado: comprobante.estado as "aprobado" | "rechazado",
+    mensajeCliente: mensajeParaCliente(comprobante),
+  });
+
+  await marcarNotificado(comprobante._id.toString(), notificado);
+  comprobante.notificadoCliente = notificado;
+  return comprobante;
 };
 
 /**
@@ -315,7 +357,10 @@ export const marcarNotificado = async (id: string, ok: boolean): Promise<void> =
 interface AvisoWebhook {
   comprobanteId: string;
   telefono: string;
-  /** Necesario para que la plantilla salga del número correcto. */
+  /**
+   * Necesario para que la plantilla salga del número correcto. Si el
+   * comprobante no lo trae, se usa el de config (ver `notificarRevision`).
+   */
   phoneNumberId?: string;
   /**
    * Nombre con el que se saluda al cliente. Nunca va vacío: ver
@@ -334,14 +379,22 @@ interface AvisoWebhook {
  * borroso y el modelo no leyó el nombre, se usa el del perfil de WhatsApp, que
  * `Preparar Entrada` ya trae del trigger. Ambos son datos reales del cliente;
  * aquí no se inventa nada.
+ *
+ * Y tiene que parecer un nombre. El perfil de WhatsApp puede ser cualquier
+ * cosa —el de este cliente era literalmente ".", y así salió el aviso—, y un
+ * saludo de una sola letra o de signos se lee como un error de la tienda. Si
+ * no hay ninguna letra, se saluda en genérico.
  */
 export const nombreParaSaludo = (comprobante: {
   nombreCliente?: string;
   nombrePerfilWhatsApp?: string;
-}): string =>
-  comprobante.nombreCliente?.trim() ||
-  comprobante.nombrePerfilWhatsApp?.trim() ||
-  SALUDO_GENERICO;
+}): string => {
+  const nombre = comprobante.nombreCliente?.trim() || comprobante.nombrePerfilWhatsApp?.trim() || "";
+  return TIENE_LETRAS.test(nombre) ? nombre : SALUDO_GENERICO;
+};
+
+/** Al menos una letra, en cualquier alfabeto (no solo ASCII). */
+const TIENE_LETRAS = /\p{L}/u;
 
 /**
  * Avisa a n8n que un comprobante fue revisado, para que el flujo de WhatsApp
@@ -358,11 +411,24 @@ export const notificarRevision = async (aviso: AvisoWebhook): Promise<boolean> =
     return false;
   }
 
+  // El número del que sale la plantilla. Se prefiere el que trae el comprobante
+  // (es el número que de verdad recibió el mensaje) y si no está —los guardados
+  // antes de que ese campo se persistiera— se usa el de la tienda. Sin ninguno
+  // de los dos, n8n armaría la llamada a Meta sin número y el aviso se perdería
+  // con un error de Graph que no dice nada.
+  const phoneNumberId = aviso.phoneNumberId?.trim() || config.whatsappPhoneNumberId;
+  if (!phoneNumberId) {
+    console.warn(
+      "[comprobantes] Sin número de negocio para el aviso: el comprobante no lo trae y falta JK_WHATSAPP_PHONE_NUMBER_ID"
+    );
+    return false;
+  }
+
   try {
     const respuesta = await fetch(config.n8nWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(aviso),
+      body: JSON.stringify({ ...aviso, phoneNumberId }),
       signal: AbortSignal.timeout(15000),
     });
 

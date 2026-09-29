@@ -129,6 +129,20 @@ export const revisar = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 /**
+ * POST /api/comprobantes/:id/notificar (trabajador|admin)
+ * Reintenta el aviso al cliente de un comprobante ya revisado cuyo aviso no
+ * salió. No cambia la revisión: solo vuelve a intentar el envío.
+ */
+export const renotificar = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const comprobante = await comprobanteService.renotificarComprobante(req.params.id);
+    res.status(200).json({ success: true, data: comprobante });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/comprobantes/motivos-rechazo (trabajador|admin)
  * La lista cerrada de motivos, para que el panel no la duplique.
  */

@@ -297,6 +297,18 @@ export const comprobanteImagenSchema = z.object({
 export const createComprobanteSchema = z.object({
   telefono: z.string().min(5, "El teléfono es obligatorio").max(40),
   imagenKey: z.string().min(1, "La key de la imagen es obligatoria").max(500),
+  /**
+   * Número de negocio que recibió el comprobante (`metadata.phone_number_id`
+   * del webhook de WhatsApp). Es el único camino por el que ese dato llega
+   * hasta la revisión, y de él depende que el aviso de vuelta al cliente salga
+   * del número correcto.
+   *
+   * Declararlo aquí NO es opcional: Zod descarta en silencio todo campo que no
+   * esté en el esquema, así que sin esta línea el dato se perdía entre el
+   * análisis y Mongo —sin ningún error— y el aviso acababa llamando a la API de
+   * Meta sin número, que responde `Object with ID 'messages' does not exist`.
+   */
+  phoneNumberId: z.string().max(40).optional(),
   nombreCliente: z.string().max(200).optional(),
   /**
    * Nombre del perfil de WhatsApp. Es el respaldo para saludar al cliente en la

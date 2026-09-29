@@ -46,9 +46,19 @@ const formatearMonto = (monto?: number): string => {
  * WhatsApp, que es un dato real del cliente y ya viene guardado. Es el mismo
  * criterio que `nombreParaSaludo` en el backend, para que el panel y la
  * plantilla de WhatsApp no digan nombres distintos.
+ *
+ * Y ese perfil puede ser cualquier cosa: el de un cliente real era ".". Un
+ * nombre sin ninguna letra no identifica a nadie (y en la plantilla se lee
+ * como un error de la tienda), así que aquí se descarta y queda el teléfono,
+ * que sí sirve para saber de quién es el comprobante.
  */
-const nombreVisible = (comprobante: Comprobante): string =>
-  comprobante.nombreCliente?.trim() || comprobante.nombrePerfilWhatsApp?.trim() || "";
+const TIENE_LETRAS = /\p{L}/u;
+
+const nombreVisible = (comprobante: Comprobante): string => {
+  const nombre =
+    comprobante.nombreCliente?.trim() || comprobante.nombrePerfilWhatsApp?.trim() || "";
+  return TIENE_LETRAS.test(nombre) ? nombre : "";
+};
 
 /**
  * Pantalla de revisión de comprobantes de pago (rol trabajador).
@@ -207,7 +217,7 @@ export default function AdminComprobantes() {
 
       const avisoCliente = actualizado.notificadoCliente
         ? " Se avisó al cliente por WhatsApp."
-        : " No se pudo avisar al cliente por WhatsApp: escríbele tú directamente. (La revisión ya quedó guardada y no se puede repetir.)";
+        : " No se pudo avisar al cliente por WhatsApp. La revisión quedó guardada: abre el comprobante para reintentar el aviso, o escríbele tú directamente.";
       setAviso({
         tipo: actualizado.notificadoCliente ? "ok" : "error",
         texto: `${estado === "aprobado" ? "Comprobante aprobado." : "Comprobante rechazado."}${avisoCliente}`,
@@ -222,6 +232,48 @@ export default function AdminComprobantes() {
       const texto = mensajeError(error, "Error al guardar la revisión");
       if (seleccionado) setErrorRechazo(texto);
       setAviso({ tipo: "error", texto });
+    } finally {
+      setRevisando((prev) => {
+        const copia = { ...prev };
+        delete copia[comprobante._id];
+        return copia;
+      });
+    }
+  };
+
+  /**
+   * Reintenta el aviso al cliente de un comprobante ya revisado.
+   *
+   * No vuelve a revisar nada: la decisión ya es firme y el backend solo
+   * reenvía el mensaje. Existe porque el aviso es best-effort —si n8n está
+   * caído, la revisión se guarda igual— y sin esto un fallo de red dejaba al
+   * cliente sin enterarse del todo, sin más salida que escribirle a mano.
+   */
+  const renotificar = async (comprobante: Comprobante) => {
+    setAviso(null);
+    setRevisando((prev) => ({ ...prev, [comprobante._id]: true }));
+
+    try {
+      const actualizado = await adminFetch<Comprobante>(
+        `/api/comprobantes/${comprobante._id}/notificar`,
+        { method: "POST" }
+      );
+
+      // El detalle abierto se queda con el dato nuevo: así el botón desaparece
+      // en cuanto el aviso sale, sin cerrar ni recargar nada.
+      setSeleccionado((prev) => (prev && prev._id === actualizado._id ? actualizado : prev));
+      setComprobantes((prev) =>
+        prev.map((c) => (c._id === actualizado._id ? { ...c, ...actualizado } : c))
+      );
+
+      setAviso({
+        tipo: actualizado.notificadoCliente ? "ok" : "error",
+        texto: actualizado.notificadoCliente
+          ? "Se avisó al cliente por WhatsApp."
+          : "No se pudo avisar al cliente por WhatsApp: escríbele tú directamente.",
+      });
+    } catch (error) {
+      setAviso({ tipo: "error", texto: mensajeError(error, "No se pudo reenviar el aviso") });
     } finally {
       setRevisando((prev) => {
         const copia = { ...prev };
@@ -342,16 +394,36 @@ export default function AdminComprobantes() {
               </div>
 
               {seleccionado.estado !== "pendiente" ? (
-                <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
-                  Ya fue {seleccionado.estado} el {formatearFecha(seleccionado.fechaRevision)}
-                  {seleccionado.motivoRechazo
-                    ? ` · motivo: ${
-                        motivos.find((m) => m.clave === seleccionado.motivoRechazo)?.etiqueta ??
-                        seleccionado.motivoRechazo
-                      }`
-                    : ""}
-                  .
-                </p>
+                <div className="space-y-2">
+                  <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">
+                    Ya fue {seleccionado.estado} el {formatearFecha(seleccionado.fechaRevision)}
+                    {seleccionado.motivoRechazo
+                      ? ` · motivo: ${
+                          motivos.find((m) => m.clave === seleccionado.motivoRechazo)?.etiqueta ??
+                          seleccionado.motivoRechazo
+                        }`
+                      : ""}
+                    .
+                  </p>
+
+                  {/* La revisión no se repite, pero el aviso sí: si el envío
+                      falló, el cliente se quedó sin saber el resultado. */}
+                  {!seleccionado.notificadoCliente && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                      <p className="text-sm text-red-700">
+                        El cliente no recibió el aviso por WhatsApp.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void renotificar(seleccionado)}
+                        disabled={Boolean(revisando[seleccionado._id])}
+                        className="mt-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                      >
+                        {revisando[seleccionado._id] ? "Enviando…" : "Reenviar aviso"}
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-3">
                   <div>

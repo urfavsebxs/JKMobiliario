@@ -55,4 +55,10 @@ export const config = {
   // Webhook de n8n que avisa al cliente cuando un trabajador revisa su
   // comprobante. Opcional: sin él, la revisión se guarda pero no se notifica.
   n8nWebhookUrl: process.env.JK_N8N_WEBHOOK_URL?.trim() || "",
+  // Número de negocio de WhatsApp desde el que sale la plantilla de aviso.
+  // Respaldo para los comprobantes guardados antes de que `phoneNumberId` se
+  // persistiera (ver `createComprobanteSchema`): sin número, Meta responde
+  // `Object with ID 'messages' does not exist` y el cliente nunca se entera.
+  // Es un id de la cuenta, no un secreto; la tienda tiene un solo número.
+  whatsappPhoneNumberId: process.env.JK_WHATSAPP_PHONE_NUMBER_ID?.trim() || "",
 };

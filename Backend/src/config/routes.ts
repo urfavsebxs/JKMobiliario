@@ -64,6 +64,9 @@ const routes: RouteConfig[] = [
   { method: "GET", path: "/api/comprobantes/:id", access: "trabajador" },
   { method: "GET", path: "/api/comprobantes/:id/imagen", access: "trabajador" },
   { method: "PATCH", path: "/api/comprobantes/:id", access: "trabajador" },
+  // Reintento del aviso al cliente: es una acción de la misma pantalla de
+  // revisión, así que el mismo nivel que revisar.
+  { method: "POST", path: "/api/comprobantes/:id/notificar", access: "trabajador" },
 
   // Fichas de cliente (lo que el asesor recuerda de quien vuelve a escribir).
   // `service`: las llama n8n — la lectura antes de responder y el upsert del
