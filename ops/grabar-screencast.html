@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Grabador de screencast — App Review</title>
+<style>
+  :root {
+    --fondo: #14161a; --panel: #1c1f26; --borde: #2c313b;
+    --texto: #e6e8ec; --tenue: #9aa2b1; --acento: #4f8cff;
+    --rojo: #ff4d4f; --verde: #35c46b; --ambar: #e8a33d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px; background: var(--fondo); color: var(--texto);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 880px; margin-inline: auto;
+  }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  .sub { color: var(--tenue); margin: 0 0 22px; font-size: 14px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--borde);
+    border-radius: 10px; padding: 18px; margin-bottom: 16px;
+  }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 8px;
+    padding: 14px 24px; cursor: pointer; color: #fff; background: var(--acento);
+  }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  #parar { background: var(--rojo); }
+  #estado { margin-left: 14px; color: var(--tenue); }
+  #cronometro {
+    font: 700 44px/1 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 1px; margin: 6px 0 2px;
+  }
+  #punto {
+    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+    background: #4a4f5a; margin-right: 10px; vertical-align: middle;
+  }
+  #punto.grabando { background: var(--rojo); animation: latido 1s infinite; }
+  @keyframes latido { 50% { opacity: .25; } }
+  ol { margin: 8px 0 0; padding-left: 22px; }
+  li { margin-bottom: 7px; }
+  li b { color: #fff; }
+  .aviso {
+    border-left: 3px solid var(--ambar); background: #241f14;
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0 0;
+  }
+  .aviso.rojo { border-left-color: var(--rojo); background: #251618; }
+  .aviso.verde { border-left-color: var(--verde); background: #14241b; }
+  code {
+    background: #0e1013; padding: 2px 6px; border-radius: 4px;
+    font: 13px ui-monospace, Menlo, monospace; color: #cbd3e0;
+  }
+  a { color: var(--acento); }
+  .fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<h1>Grabador de screencast para el App Review</h1>
+<p class="sub">Graba con el navegador. No instala nada y no sube nada a ningún sitio: el vídeo se queda en tu disco.</p>
+
+<div class="panel">
+  <div class="fila">
+    <div id="punto"></div>
+    <div id="cronometro">00:00</div>
+    <span id="estado">listo</span>
+  </div>
+  <div class="fila" style="margin-top:16px">
+    <button id="grabar">Empezar a grabar</button>
+    <button id="parar" disabled>Parar y descargar</button>
+  </div>
+  <div class="aviso">
+    Cuando el navegador pregunte qué compartir, elige <b>la ventana</b> (no «toda la
+    pantalla»): así esta página no sale en el vídeo. Si tu selector solo ofrece
+    pantalla completa, usa una <b>región</b> que deje fuera esta pestaña.
+  </div>
+</div>
+
+<div class="panel">
+  <h2 style="font-size:16px;margin:0 0 2px">Un solo vídeo cubre los cinco permisos</h2>
+  <p class="sub" style="margin-bottom:0">
+    No hacen falta cinco grabaciones. El flujo de Messenger ejercita
+    <code>pages_messaging</code>, <code>pages_show_list</code>,
+    <code>pages_manage_metadata</code>, <code>pages_read_engagement</code> y
+    <code>business_management</code> a la vez. <b>Una toma continua sirve para los cinco.</b>
+    (<code>public_profile</code> no pide screencast.)
+  </p>
+</div>
+
+<div class="panel">
+  <h2 style="font-size:16px;margin:0 0 2px">Antes de darle a grabar</h2>
+  <div class="aviso rojo">
+    <b>La cuenta que escriba tiene que tener rol en la app.</b> Si no, el bot le
+    contesta con el error <code>code 10</code> y lo grabas fallando. Añádela en
+    <b>Roles de la app → Evaluadores</b> y espera a que acepte la invitación.
+  </div>
+  <ol style="margin-top:14px">
+    <li>Ten abierta la <b>bandeja de Messenger de la página</b>, con la conversación sin responder.</li>
+    <li>Ten abierta una pestaña con <b>n8n → Ejecuciones</b> del flujo <code>OnRMtzFSd6eWdiGM</code>.</li>
+    <li>Ten a mano <b>la otra cuenta</b> (la que tiene rol) para escribir.</li>
+    <li>Cierra o minimiza lo que no quieras que se vea: correos, chats, otros clientes.</li>
+  </ol>
+</div>
+
+<div class="panel">
+  <h2 style="font-size:16px;margin:0 0 2px">Guion de la toma (sin cortes)</h2>
+  <ol>
+    <li>Muestra la <b>bandeja de la página</b> con la conversación del cliente todavía sin responder.</li>
+    <li>Desde la otra cuenta, escribe al Messenger de la página: <i>«Hola, quiero cotizar un sofá»</i>.</li>
+    <li>Vuelve a la bandeja y deja que se vea <b>cómo llega la respuesta sola</b>, con el enlace del catálogo y el WhatsApp.</li>
+    <li>Cambia a n8n y muestra <b>el flujo ejecutándose</b>: el webhook recibiendo, el nodo de IA y el <code>HTTP Request</code> enviando a <code>graph.facebook.com/v26.0/675839012618644/messages</code>.</li>
+    <li>Cierra mostrando que <b>solo se responde a quien escribió primero</b>.</li>
+  </ol>
+  <div class="aviso verde">
+    Sin cortes. Nada de editar ni de montar: Meta rechaza los vídeos editados.
+    Si te equivocas, para y empieza de nuevo.
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let grabador = null, trozos = [], t0 = 0, tic = null, flujo = null;
+
+const dosDigitos = (n) => String(n).padStart(2, "0");
+
+function pintarCronometro() {
+  const s = Math.floor((Date.now() - t0) / 1000);
+  $("cronometro").textContent = `${dosDigitos(Math.floor(s / 60))}:${dosDigitos(s % 60)}`;
+}
+
+function mejorTipo() {
+  const candidatos = [
+    "video/webm;codecs=vp9",
+    "video/webm;codecs=vp8",
+    "video/webm",
+  ];
+  return candidatos.find((t) => MediaRecorder.isTypeSupported(t)) || "";
+}
+
+$("grabar").addEventListener("click", async () => {
+  try {
+    flujo = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: 30 },
+      audio: false,
+    });
+  } catch (e) {
+    $("estado").textContent = "cancelado o no permitido: " + e.message;
+    return;
+  }
+
+  trozos = [];
+  const tipo = mejorTipo();
+  grabador = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : undefined);
+  grabador.ondataavailable = (e) => { if (e.data.size) trozos.push(e.data); };
+  grabador.onstop = () => {
+    const blob = new Blob(trozos, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "screencast-messenger.webm";
+    a.click();
+    URL.revokeObjectURL(url);
+    $("estado").textContent = `descargado — ${(blob.size / 1048576).toFixed(1)} MB`;
+  };
+
+  // Si el usuario para la compartición desde el sistema, cerramos bien.
+  flujo.getVideoTracks()[0].addEventListener("ended", () => parar());
+
+  grabador.start(1000);
+  t0 = Date.now();
+  pintarCronometro();
+  tic = setInterval(pintarCronometro, 250);
+  $("punto").classList.add("grabando");
+  $("estado").textContent = "grabando… cambia a la ventana del guion";
+  $("grabar").disabled = true;
+  $("parar").disabled = false;
+});
+
+function parar() {
+  if (!grabador || grabador.state === "inactive") return;
+  grabador.stop();
+  flujo.getVideoTracks().forEach((t) => t.stop());
+  clearInterval(tic);
+  $("punto").classList.remove("grabando");
+  $("grabar").disabled = false;
+  $("parar").disabled = true;
+}
+
+$("parar").addEventListener("click", parar);
+</script>
+</body>
+</html>
