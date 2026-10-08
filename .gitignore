@@ -17,3 +17,7 @@ skills-lock.json
 # credenciales que se dejan ahí al lado (el token de Messenger, por ejemplo) no.
 ops/*token*.txt
 ops/*respaldo*.txt
+# Herramienta de análisis: revisa la geometría de un lienzo de n8n (cables que se
+# cruzan, ramas invertidas, cables pegados). Se usa a mano, no es operación del
+# servidor, y su formato de entrada es un export del editor.
+ops/revisar-lienzo-n8n.js
