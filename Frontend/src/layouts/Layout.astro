@@ -51,5 +51,48 @@ const {
     <!-- Asesor IA y carrito: islas diferidas para no afectar los Core Web Vitals. -->
     <AsesorIA client:idle />
     <CarritoUI client:idle />
+
+    <!--
+      Registro de visitas. Es lo que alimenta el reporte de tráfico del panel
+      (/admin/trafico): sin esto, el reporte solo puede mostrar el panel, no a
+      los visitantes de la tienda.
+
+      Tres decisiones que conviene no deshacer:
+
+      - Se manda **sin cuerpo**, con los datos en la query. `sendBeacon` no hace
+        preflight de CORS, y un `Content-Type: application/json` desde la tienda
+        (web.jkmobiliario.digital) hacia la API (api.jkmobiliario.digital) lo
+        exigiría: el beacon se perdería en silencio. Un POST sin cuerpo ni
+        cabeceras propias sí es una petición simple.
+      - No mide /admin, /login ni /cambio-password. Son páginas del personal, y
+        contarlas inflaría el tráfico con quien está trabajando en el panel.
+      - Respeta "Do Not Track". El servidor no guarda IP ni navegador (solo un
+        hash que cambia cada día), así que no hay banner de cookies que poner;
+        pero si alguien pide explícitamente no ser seguido, no se cuenta.
+    -->
+    <script>
+      import { API_URL } from "../lib/apiBase";
+
+      const RUTAS_SIN_MEDIR = ["/admin", "/login", "/cambio-password"];
+
+      const ruta = window.location.pathname;
+      const esPaginaDelPersonal = RUTAS_SIN_MEDIR.some(
+        (prefijo) => ruta === prefijo || ruta.startsWith(`${prefijo}/`)
+      );
+      const pideNoSerSeguido =
+        navigator.doNotTrack === "1" ||
+        (window as unknown as { doNotTrack?: string }).doNotTrack === "1";
+
+      if (!esPaginaDelPersonal && !pideNoSerSeguido && typeof navigator.sendBeacon === "function") {
+        try {
+          const parametros = new URLSearchParams({ ruta });
+          if (document.referrer) parametros.set("referidor", document.referrer);
+          navigator.sendBeacon(`${API_URL}/api/trafico/visita?${parametros.toString()}`);
+        } catch {
+          // Si el navegador bloquea el beacon (modo privado, extensión), la
+          // visita simplemente no se cuenta: no es algo que deba ver el cliente.
+        }
+      }
+    </script>
   </body>
 </html>

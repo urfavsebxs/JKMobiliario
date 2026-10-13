@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ROLES } from "../models/User";
 import { CANALES_CLIENTE } from "../models/Cliente";
+import { PERIODOS } from "../models/Visita";
 import { LARGO_MINIMO_PASSWORD } from "../lib/passwords";
 
 // ─── Auth ────────────────────────────────────────────────────────────
@@ -416,3 +417,45 @@ export const updateClienteSchema = z
     message: "No hay nada que actualizar",
     path: ["nombre"],
   });
+
+// ─── Tráfico de la página ────────────────────────────────────────────
+
+/**
+ * POST /api/trafico/visita — lo que manda el navegador del visitante.
+ *
+ * Los dos campos viajan en la **query string**, no en el cuerpo, y eso es
+ * deliberado: `navigator.sendBeacon` no puede hacer la petición de preflight
+ * que exigiría un `Content-Type: application/json` desde otro origen (la tienda
+ * vive en web.jkmobiliario.digital y la API en api.jkmobiliario.digital). Un
+ * POST sin cuerpo ni cabeceras propias es una petición "simple" y sale sin
+ * preflight; con el JSON en el cuerpo, el beacon se perdería.
+ *
+ * Solo se aceptan dos campos y no hay campo opcional de más: la ruta que se ve
+ * y el referer. Todo lo demás (dispositivo, hora, identificación anónima del
+ * visitante) lo deduce el servidor. Si el navegador pudiera mandarlo, el
+ * reporte dejaría de ser un dato y pasaría a ser lo que cada visitante quiera
+ * declarar.
+ *
+ * La ruta se exige relativa (`/...`) porque es lo único que se guarda: una URL
+ * absoluta traería el dominio y podría traer parámetros con datos de quien la
+ * compartió.
+ */
+export const visitaSchema = z.object({
+  ruta: z
+    .string()
+    .trim()
+    .min(1, "La ruta es obligatoria")
+    .max(300, "La ruta es demasiado larga")
+    .refine((valor) => valor.startsWith("/"), { message: "La ruta debe empezar por /" }),
+  /**
+   * `document.referrer` tal cual. Puede venir vacío (navegación directa) o con
+   * el centinela "null" de algunos navegadores; el servicio traduce lo que no
+   * sea un origen legible a "(directo)".
+   */
+  referidor: z.string().trim().max(500).optional(),
+});
+
+/** GET /api/trafico/resumen — ventana del reporte. */
+export const resumenTraficoQuerySchema = z.object({
+  periodo: z.enum(PERIODOS),
+});

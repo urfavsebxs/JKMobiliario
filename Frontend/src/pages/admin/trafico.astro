@@ -1,0 +1,45 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminTrafico from "../../components/react/admin/AdminTrafico";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+
+// El middleware ya deja fuera al trabajador (solo entra a comprobantes), pero
+// se vuelve a comprobar aquí: el tráfico de la tienda es información del dueño
+// y esta página no debe depender de una sola capa.
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+let rol = "";
+try {
+  const res = await fetch(`${API_URL}/api/auth/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return Astro.redirect("/login");
+  rol = (await res.json()).data?.role ?? "";
+} catch {
+  return Astro.redirect("/login");
+}
+
+if (rol !== "admin") {
+  return Astro.redirect(rol === "trabajador" ? "/admin/comprobantes" : "/");
+}
+---
+
+<Layout title="Tráfico de la página" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">← Volver al panel</a>
+      <h1 class="text-2xl font-bold text-gray-900 mt-1">Tráfico de la página</h1>
+      <p class="text-gray-600">
+        Cuánta gente entra a la tienda, a qué horas, qué mira y de dónde llega. Se puede ver por
+        día, por semana y por mes. No se guardan datos personales de los visitantes.
+      </p>
+    </div>
+
+    <AdminTrafico client:load />
+  </div>
+</Layout>

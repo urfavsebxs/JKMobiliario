@@ -80,6 +80,15 @@ const routes: RouteConfig[] = [
   // `admin`: corregir el dato del cliente es del dueño, no de cualquiera que
   // atienda. Si algún día un trabajador debe anotar, se cambia aquí y ya.
   { method: "PATCH", path: "/api/clientes/:id", access: "admin" },
+
+  // Tráfico de la página.
+  // `public`: la manda el navegador de cualquier visitante, que no tiene
+  // sesión. El cuerpo lo cierra `visitaSchema` (`.strict()`): solo entran la
+  // ruta y el referer, y el resto lo deduce el servidor.
+  { method: "POST", path: "/api/trafico/visita", access: "public" },
+  // `admin`: el tráfico de la tienda es información del dueño, no de cualquiera
+  // con sesión abierta en un equipo compartido.
+  { method: "GET", path: "/api/trafico/resumen", access: "admin" },
 ];
 
 const matchRoute = (configPath: string, requestPath: string): boolean => {
