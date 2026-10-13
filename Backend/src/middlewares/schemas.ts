@@ -459,3 +459,39 @@ export const visitaSchema = z.object({
 export const resumenTraficoQuerySchema = z.object({
   periodo: z.enum(PERIODOS),
 });
+
+// ─── Conversaciones (memoria de n8n) ─────────────────────────────────
+
+/**
+ * GET /api/conversaciones/:sessionId — el `sessionId` de la memoria de n8n.
+ *
+ * Se valida la forma y no solo el contenido: el valor entra en una consulta
+ * contra Mongo, así que un objeto (`?sessionId[$ne]=x` llega como objeto, no
+ * como cadena) tiene que rebotar aquí y no llegar al driver. En WhatsApp el
+ * identificador es un teléfono en solo dígitos, pero se aceptan letras, punto,
+ * guion y dos puntos para que un BSUID (`CO.974499928343619`) también valga.
+ */
+export const sessionIdParamSchema = z.object({
+  sessionId: z
+    .string()
+    .trim()
+    .min(1, "El identificador es obligatorio")
+    .max(64, "El identificador es demasiado largo")
+    .regex(/^[0-9A-Za-z._:-]+$/, "El identificador tiene caracteres no válidos"),
+});
+
+/**
+ * GET /api/conversaciones/:sessionId/imagenes/:archivo — nombre del archivo de
+ * una imagen de cliente, tal como lo genera el backend al guardarla
+ * (`<milisegundos>-<hexadecimal>.<extensión>`).
+ *
+ * La forma se valida aquí **además** de en el servicio: es el valor que se pega
+ * para armar la clave del objeto en el bucket, y sin esta comprobación un
+ * `..%2F..%2F` en la URL podría apuntar fuera de la carpeta del cliente.
+ */
+export const archivoImagenParamSchema = z.object({
+  archivo: z
+    .string()
+    .trim()
+    .regex(/^\d{10,20}-[0-9a-f]{6,40}\.(jpg|jpeg|png|webp)$/, "Nombre de imagen no válido"),
+});

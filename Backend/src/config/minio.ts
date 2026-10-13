@@ -97,6 +97,37 @@ export const getPrivateObjectStream = (key: string): Promise<NodeJS.ReadableStre
 export const statPrivateObject = (key: string) =>
   minioClient.statObject(config.minioBucketComprobantes, key);
 
+/**
+ * Lista los objetos del bucket privado que empiezan por un prefijo.
+ *
+ * Se usa para ver las imágenes que ha mandado un cliente: n8n sube **todas** las
+ * imágenes que llegan por WhatsApp bajo `comprobantes/<telefono>/`, tanto las
+ * que resultan ser un pago como las que no (una foto de referencia de un mueble).
+ * Las que no son comprobante quedan sin fila en la base, así que el listado por
+ * prefijo es la única forma de encontrarlas.
+ */
+export const listPrivateObjects = async (
+  prefix: string
+): Promise<Array<{ nombre: string; bytes: number; fecha: Date }>> => {
+  const stream = minioClient.listObjectsV2(config.minioBucketComprobantes, prefix, true);
+  const objetos: Array<{ nombre: string; bytes: number; fecha: Date }> = [];
+
+  await new Promise<void>((resolve, reject) => {
+    stream.on("data", (objeto) => {
+      if (!objeto.name) return;
+      objetos.push({
+        nombre: objeto.name,
+        bytes: objeto.size ?? 0,
+        fecha: objeto.lastModified ?? new Date(0),
+      });
+    });
+    stream.on("end", () => resolve());
+    stream.on("error", reject);
+  });
+
+  return objetos;
+};
+
 /** Borra un comprobante del bucket privado (idempotente). */
 export const removePrivateObject = async (key: string): Promise<void> => {
   try {

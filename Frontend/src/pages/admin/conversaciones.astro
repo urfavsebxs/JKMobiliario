@@ -1,0 +1,45 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminConversaciones from "../../components/react/admin/AdminConversaciones";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+
+// El middleware ya deja fuera al trabajador (solo entra a comprobantes), pero
+// se vuelve a comprobar aquí: esto son conversaciones reales de clientes.
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+let rol = "";
+try {
+  const res = await fetch(`${API_URL}/api/auth/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return Astro.redirect("/login");
+  rol = (await res.json()).data?.role ?? "";
+} catch {
+  return Astro.redirect("/login");
+}
+
+if (rol !== "admin") {
+  return Astro.redirect(rol === "trabajador" ? "/admin/comprobantes" : "/");
+}
+---
+
+<Layout title="Conversaciones de WhatsApp" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">← Volver al panel</a>
+      <h1 class="text-2xl font-bold text-gray-900 mt-1">Conversaciones de WhatsApp</h1>
+      <p class="text-gray-600">
+        Lo que los clientes han hablado con el asistente, tal como quedó guardado. Es una pantalla
+        de solo lectura: sirve para revisar cómo está atendiendo el asistente y qué pidió cada
+        cliente.
+      </p>
+    </div>
+
+    <AdminConversaciones client:load />
+  </div>
+</Layout>

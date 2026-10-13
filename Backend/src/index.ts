@@ -12,6 +12,7 @@ import productRoutes from "./modules/products/product.routes";
 import categoryRoutes from "./modules/categories/category.routes";
 import comprobanteRoutes from "./modules/comprobantes/comprobante.routes";
 import clienteRoutes from "./modules/clientes/cliente.routes";
+import conversacionesRoutes from "./modules/conversaciones/conversaciones.routes";
 import traficoRoutes from "./modules/trafico/trafico.routes";
 import userRoutes from "./modules/users/user.routes";
 
@@ -88,6 +89,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/comprobantes", comprobanteRoutes);
 app.use("/api/clientes", clienteRoutes);
+app.use("/api/conversaciones", conversacionesRoutes);
 app.use("/api/trafico", traficoRoutes);
 app.use("/api/users", userRoutes);
 

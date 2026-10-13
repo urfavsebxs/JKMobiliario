@@ -89,6 +89,16 @@ const routes: RouteConfig[] = [
   // `admin`: el tráfico de la tienda es información del dueño, no de cualquiera
   // con sesión abierta en un equipo compartido.
   { method: "GET", path: "/api/trafico/resumen", access: "admin" },
+
+  // Conversaciones de WhatsApp guardadas en la memoria de n8n.
+  // `admin` en las dos: son conversaciones reales de clientes con nombre,
+  // teléfono y lo que preguntaron. El nivel por defecto (`authenticated`) dejaría
+  // que cualquier sesión abierta en un equipo compartido las leyera.
+  { method: "GET", path: "/api/conversaciones", access: "admin" },
+  { method: "GET", path: "/api/conversaciones/:sessionId", access: "admin" },
+  // Las fotos que mandó el cliente en esa conversación (bucket privado, servidas
+  // con sesión). Mismo nivel que leer la conversación.
+  { method: "GET", path: "/api/conversaciones/:sessionId/imagenes/:archivo", access: "admin" },
 ];
 
 const matchRoute = (configPath: string, requestPath: string): boolean => {
