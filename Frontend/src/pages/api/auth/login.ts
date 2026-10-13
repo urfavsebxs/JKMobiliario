@@ -43,6 +43,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
+    // `secure` en producción (el sitio va por HTTPS): la cookie de sesión no
+    // viaja nunca en claro, así que una red abierta no puede copiarla. En
+    // desarrollo se deja apagado porque el sitio local va por http.
+    secure: import.meta.env.PROD,
     maxAge: 86400,
   });
 
