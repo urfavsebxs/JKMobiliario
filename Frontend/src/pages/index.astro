@@ -3,6 +3,7 @@ import { Image } from "astro:assets";
 import type { ImageMetadata } from "astro";
 import Layout from "../layouts/Layout.astro";
 import hero from "../assets/jk/hero.jpg";
+import heroEscritorio from "../assets/jk/hero-escritorio.jpg";
 import d1 from "../assets/jk/d1.jpg";
 import d2 from "../assets/jk/d2.jpg";
 import d3 from "../assets/jk/d3.jpg";
@@ -171,49 +172,61 @@ const categorias = grupos.map((grupo) => ({
     <!-- En móvil la foto termina con el hero para no invadir la sección
          siguiente (el texto del concepto quedaría sobre la imagen). -->
     <div class="absolute inset-x-0 top-0 h-full overflow-hidden lg:h-[1000px]">
-      <!-- Móvil: el vídeo. Con `media` en los <source>, el escritorio no
-           descarga un archivo que no va a usar. -->
+      <!-- Respaldo por breakpoint: la foto se pinta al instante (es el LCP) y el
+           vídeo la tapa en cuanto arranca, porque el vídeo es opaco. Cada uno
+           tiene la proporción de SU vídeo, para que al empezar a reproducir no
+           haya salto de encuadre.
+
+           Va en un `<picture>` y no en dos `<img>` con `lg:hidden`: así el
+           navegador solo descarga la fuente de su breakpoint. Con dos `<img>`,
+           el que queda en `display:none` se descarga igual. -->
+      <picture>
+        <source media="(max-width: 1023px)" srcset="/videos/hero-mobiliario-poster.jpg" />
+        <Image
+          src={heroEscritorio}
+          alt=""
+          width={1280}
+          height={720}
+          widths={[960, 1280]}
+          sizes="100vw"
+          loading="eager"
+          fetchpriority="high"
+          class="jk-zoom absolute inset-0 h-full w-full object-cover"
+        />
+      </picture>
+
+      <!-- Un solo <video> con un <source> por breakpoint: con dos elementos, el
+           que queda en `display:none` también se descarga, y son 3,5 MB cada
+           uno. En escritorio el vídeo es horizontal (1280x720), así que en el
+           hero de 1440x1000 encaja a 1,39x; el vertical se ampliaba 2x. -->
       <video
-        class="jk-zoom h-full w-full object-cover opacity-[0.77] lg:hidden"
-        width="720"
-        height="1206"
+        class="jk-zoom absolute inset-0 h-full w-full object-cover"
+        width="1280"
+        height="720"
         autoplay
         loop
         muted
         playsinline
         preload="auto"
-        poster="/videos/hero-mobiliario-poster.jpg"
         aria-hidden="true"
         tabindex="-1"
         disablepictureinpicture
         data-jk-hero-video
       >
-        <!-- Un solo origen, a propósito: se codificó también en VP9 y a igual
-             peso rinde lo mismo (25,8 dB contra 25,7 dB del H.264, medidos
-             contra el máster), así que el WebM solo engordaba el repo 3 MB. -->
+        <!-- Un solo origen por breakpoint, a propósito: el vídeo móvil se
+             codificó también en VP9 y a igual peso rendía lo mismo (25,8 dB
+             contra 25,7 dB del H.264, medidos contra el máster), así que el
+             WebM solo engordaba el repo 3 MB. -->
+        <source media="(min-width: 1024px)" src="/videos/hero-escritorio.mp4" type="video/mp4" />
         <source media="(max-width: 1023px)" src="/videos/hero-mobiliario.mp4" type="video/mp4" />
       </video>
 
-      <!-- Escritorio: la imagen, no el vídeo. El vídeo es vertical (720x1206) y
-           este hero es horizontal y de ancho completo: con `object-cover`, un
-           0,6:1 metido en 1440x1000 se amplía 2x y solo se ve el 41% central de
-           su altura. De ahí la borrosidad, y no tiene arreglo recomprimiendo:
-           medido en RGB y fotograma a fotograma, el MP4 rinde 32,9 dB de PSNR
-           contra el máster, que es su techo con un máster de 720px. En cambio
-           hero.jpg es 1600x1067, o sea horizontal: a 1440px encaja a 0,94x, sin
-           ampliar. En móvil el vídeo sí se queda, porque ahí se reduce (1,85x a
-           390px) y se ve nítido. -->
-      <Image
-        src={hero}
-        alt=""
-        width={1440}
-        height={960}
-        widths={[960, 1440, 1920]}
-        sizes="100vw"
-        loading="eager"
-        fetchpriority="high"
-        class="jk-zoom hidden h-full w-full object-cover opacity-[0.77] lg:block"
-      />
+      <!-- El oscurecido va en una capa propia y no en un `opacity` de cada
+           elemento: repartido entre la foto y el vídeo, en cuanto el vídeo
+           arranca se sumarían las dos transparencias (0,77 sobre 0,77) y el
+           hero se vería lavado. Así el resultado es 0,77 con foto, con vídeo o
+           con los dos. -->
+      <div class="absolute inset-0 bg-black/[0.23]"></div>
       <div
         class="absolute inset-x-0 bottom-0 h-[143px] bg-linear-to-b from-transparent to-black"
       >
@@ -799,8 +812,9 @@ const categorias = grupos.map((grupo) => ({
     });
   }
 
-  // Hero en video: con movimiento reducido se detiene y queda el poster como
-  // imagen fija. Sin JS, el autoplay nativo sigue funcionando con normalidad.
+  // Hero en video: con movimiento reducido se detiene y queda la foto de
+  // respaldo como imagen fija. Sin JS, el autoplay nativo sigue funcionando con
+  // normalidad.
   const videoHero = document.querySelector<HTMLVideoElement>("[data-jk-hero-video]");
 
   if (videoHero && prefiereQuieto) {
