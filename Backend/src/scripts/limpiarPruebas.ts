@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
+import fs from "fs/promises";
+import { createWriteStream } from "fs";
+import path from "path";
+import { pipeline } from "stream/promises";
 import { connectDB } from "../config/database";
 import { config } from "../config";
-import { removePrivateObject } from "../config/minio";
+import { getPrivateObjectStream, removePrivateObject } from "../config/minio";
 import { Comprobante } from "../models/Comprobante";
 
 /**
@@ -15,6 +19,12 @@ import { Comprobante } from "../models/Comprobante";
  * **Sin `--borrar` no borra nada: hace un inventario.** Es a propósito — el
  * script se ejecuta contra la base real, y la única forma de no borrar por
  * error lo que no era de prueba es ver primero lo que hay.
+ *
+ * **Antes de borrar, copia.** Los documentos van a un JSON y las imágenes se
+ * descargan del bucket privado, todo a `ops/respaldos/comprobantes-<fecha>/`
+ * (o al directorio que diga `--respaldo`). Borrar un comprobante no se deshace,
+ * y un comprobante aprobado con nombre, teléfono y monto puede ser el único
+ * rastro de un pago real: si la copia no se puede escribir, NO se borra.
  *
  *   npx tsx src/scripts/limpiarPruebas.ts
  *   npx tsx src/scripts/limpiarPruebas.ts --borrar
@@ -35,6 +45,13 @@ for (let i = 0; i < argumentos.length; i++) {
   if (argumentos[i] === "--sesion" && argumentos[i + 1]) sesiones.push(argumentos[i + 1]);
 }
 
+const marca = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+const indiceRespaldo = argumentos.indexOf("--respaldo");
+const dirRespaldo =
+  indiceRespaldo >= 0 && argumentos[indiceRespaldo + 1]
+    ? argumentos[indiceRespaldo + 1]
+    : path.join("..", "ops", "respaldos", `comprobantes-${marca}`);
+
 /** Acceso directo a la colección de memoria de n8n, sin pasar por el modelo. */
 const coleccionMemoria = () =>
   mongoose.connection.getClient().db(BASE_N8N).collection(COLECCION_MEMORIA);
@@ -48,7 +65,7 @@ const inventarioComprobantes = async () => {
   console.log(`\n═══ COMPROBANTES ═══`);
   console.log(`Documentos en la colección: ${total}`);
 
-  if (total === 0) return { total: 0, keys: [] as string[] };
+  if (total === 0) return { total: 0, docs: [] as Awaited<ReturnType<typeof Comprobante.find>> };
 
   // El inventario va completo y en crudo a propósito: es lo último que se ve
   // antes de borrar, y aquí lo que importa es poder reconocer si algo NO era de
@@ -66,10 +83,58 @@ const inventarioComprobantes = async () => {
 
   const porEstado = await Comprobante.aggregate([{ $group: { _id: "$estado", n: { $sum: 1 } } }]);
   console.log(`  Estados: ${porEstado.map((e) => `${e._id}=${e.n}`).join(", ")}`);
+  console.log(`  Imágenes en el bucket privado "${config.minioBucketComprobantes}": ${docs.length}`);
+  return { total, docs };
+};
 
-  const keys = docs.map((doc) => doc.imagenKey).filter(Boolean);
-  console.log(`  Imágenes en el bucket privado "${config.minioBucketComprobantes}": ${keys.length}`);
-  return { total, keys };
+/**
+ * Deja una copia de los comprobantes antes de borrarlos: los documentos en un
+ * JSON y las imágenes descargadas del bucket privado.
+ *
+ * Si algo falla aquí, el script aborta sin borrar. Una copia a medias sería
+ * peor que no tenerla, porque daría por respaldado lo que no lo está.
+ */
+const respaldar = async (docs: Record<string, unknown>[]): Promise<void> => {
+  await fs.mkdir(dirRespaldo, { recursive: true });
+
+  await fs.writeFile(
+    path.join(dirRespaldo, "comprobantes.json"),
+    JSON.stringify(docs, null, 2),
+    "utf8"
+  );
+
+  const carpetaImagenes = path.join(dirRespaldo, "imagenes");
+  await fs.mkdir(carpetaImagenes, { recursive: true });
+
+  let copiadas = 0;
+  for (const doc of docs) {
+    const key = doc.imagenKey as string;
+    if (!key) continue;
+    // El nombre del objeto ya es único (`<ms>-<hex>.jpg`); se aplana con el
+    // teléfono delante para poder reconocer la copia sin abrir el JSON.
+    const destino = path.join(carpetaImagenes, `${String(doc.telefono ?? "sin")}__${path.basename(key)}`);
+    const stream = await getPrivateObjectStream(key);
+    // `pipeline` y no `writeFile`: el objeto llega como stream, y volcarlo a
+    // memoria para escribirlo haría que una imagen grande se comiera la RAM del
+    // servidor sin necesidad.
+    await pipeline(stream, createWriteStream(destino));
+    copiadas++;
+  }
+
+  const sesionesJson = await coleccionMemoria()
+    .find({ sessionId: { $in: sesiones } })
+    .toArray()
+    .catch(() => []);
+  if (sesionesJson.length > 0) {
+    await fs.writeFile(
+      path.join(dirRespaldo, "sesiones-n8n.json"),
+      JSON.stringify(sesionesJson, null, 2),
+      "utf8"
+    );
+  }
+
+  console.log(`  Respaldo en ${path.resolve(dirRespaldo)}`);
+  console.log(`    ${docs.length} documentos, ${copiadas} imágenes, ${sesionesJson.length} sesiones`);
 };
 
 const inventarioSesiones = async () => {
@@ -111,7 +176,7 @@ const main = async () => {
 
   console.log(`Modo: ${borrar ? "BORRAR" : "solo inventario (añade --borrar para borrar)"}`);
 
-  const { keys } = await inventarioComprobantes();
+  const { docs } = await inventarioComprobantes();
   const sesionesEncontradas = await inventarioSesiones();
 
   if (!borrar) {
@@ -120,21 +185,29 @@ const main = async () => {
     return;
   }
 
+  console.log(`\n═══ RESPALDO ═══`);
+  // Si el respaldo falla, se lanza y no se borra nada: es la red de seguridad.
+  await respaldar(docs as unknown as Record<string, unknown>[]);
+
   console.log(`\n═══ BORRANDO ═══`);
 
   // Primero las imágenes y después los documentos: al revés, un fallo a mitad
   // dejaría documentos apuntando a imágenes que ya no existen, y el panel
   // mostraría comprobantes rotos.
   let imagenesBorradas = 0;
-  for (const key of keys) {
+  let imagenesFallidas = 0;
+  for (const doc of docs) {
+    const key = (doc as { imagenKey?: string }).imagenKey;
+    if (!key) continue;
     try {
       await removePrivateObject(key);
       imagenesBorradas++;
     } catch (error) {
+      imagenesFallidas++;
       console.log(`  imagen ${key}: ${(error as Error).message}`);
     }
   }
-  console.log(`  Imágenes borradas del bucket: ${imagenesBorradas}/${keys.length}`);
+  console.log(`  Imágenes borradas: ${imagenesBorradas}/${docs.length} (fallidas: ${imagenesFallidas})`);
 
   const resultado = await Comprobante.deleteMany({});
   console.log(`  Comprobantes borrados: ${resultado.deletedCount}`);
@@ -144,7 +217,7 @@ const main = async () => {
     console.log(`  Sesión ${sesion} borrada: ${res.deletedCount}`);
   }
 
-  console.log(`\nListo.\n`);
+  console.log(`\nListo. Respaldo en ${path.resolve(dirRespaldo)}\n`);
   await mongoose.disconnect();
 };
 
