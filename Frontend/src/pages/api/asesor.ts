@@ -9,12 +9,12 @@ import {
 } from "../../lib/categorias";
 
 /**
- * Proxy del chat "Asesor IA" hacia la API de Gemini.
+ * Proxy del chat "Asesor IA" hacia la API de OpenAI.
  *
  * ¿Por qué una ruta de Astro y no un endpoint en Express?
  *   - Se ejecuta en el mismo origen del sitio (Vercel), por lo que no hay CORS
  *     ni *mixed content*: el sitio es HTTPS y el backend del VPS se consume por
- *     HTTP. La `GEMINI_API_KEY` nunca viaja al navegador.
+ *     HTTP. La `OPENAI_API_KEY` nunca viaja al navegador.
  *   - El contrato es mínimo y sin estado: el historial lo envía el cliente.
  *
  * Request:  { "mensajes": [{ "rol": "usuario" | "asesor", "texto": string }] }
@@ -27,12 +27,12 @@ const MAX_TEXTO = 800;
 const MAX_CUERPO_BYTES = 16 * 1024;
 const VENTANA_LIMITE_MS = 60_000;
 const MAX_PETICIONES_POR_VENTANA = 8;
-const TIMEOUT_GEMINI_MS = 20_000;
+const TIMEOUT_OPENAI_MS = 20_000;
 
-// Modelo vigente de la familia Flash (rápido y económico para chat).
-// Se puede fijar otro modelo con la variable de entorno GEMINI_MODEL.
-const MODELO_POR_DEFECTO = "gemini-3.8-flash";
-const API_GEMINI = "https://generativelanguage.googleapis.com/v1beta/models";
+// Modelo vigente: la familia mini de GPT-5.4 (rápida y económica para chat).
+// Se puede fijar otro modelo con la variable de entorno OPENAI_MODEL.
+const MODELO_POR_DEFECTO = "gpt-5.4-mini";
+const API_OPENAI = "https://api.openai.com/v1/chat/completions";
 
 // Codificador reutilizable para medir el cuerpo en bytes UTF-8 reales.
 const codificadorTexto = new TextEncoder();
@@ -43,17 +43,17 @@ interface MensajeEntrada {
   texto: string;
 }
 
-interface RespuestaGemini {
-  candidates?: Array<{
-    content?: { parts?: Array<{ text?: string }> };
-    finishReason?: string;
+interface RespuestaOpenAI {
+  choices?: Array<{
+    message?: { content?: string | null };
+    // "content_filter" es el único final que equivale a un bloqueo por política.
+    finish_reason?: string;
   }>;
-  promptFeedback?: { blockReason?: string };
   error?: {
-    code?: number;
-    status?: string;
     message?: string;
-    details?: Array<{ reason?: string }>;
+    type?: string;
+    code?: string | null;
+    param?: string | null;
   };
 }
 
@@ -64,7 +64,7 @@ interface RespuestaGemini {
 const TTL_CATALOGO_MS = 5 * 60_000; // 5 minutos
 const TIMEOUT_CATALOGO_MS = 2_000;
 // Vencimiento global de la carga completa: aunque la API siga respondiendo
-// en segundo plano, el chat no espera más que esto antes de llamar a Gemini.
+// en segundo plano, el chat no espera más que esto antes de llamar a OpenAI.
 const DEADLINE_CATALOGO_MS = 3_500;
 const MAX_PAGINAS_CATALOGO = 3;
 const LIMITE_PRODUCTOS_PAGINA = 100;
@@ -509,18 +509,13 @@ function validarMensajes(dato: unknown): ResultadoValidacion {
   return { ok: true, mensajes: limpios };
 }
 
-// ─── Llamada a Gemini ────────────────────────────────────────────────
-function extraerTexto(respuesta: RespuestaGemini): string {
-  const partes = respuesta.candidates?.[0]?.content?.parts ?? [];
-  return partes
-    .map((parte) => parte.text ?? "")
-    .join("")
-    .trim();
+// ─── Llamada a OpenAI ────────────────────────────────────────────────
+function extraerTexto(respuesta: RespuestaOpenAI): string {
+  return (respuesta.choices?.[0]?.message?.content ?? "").trim();
 }
 
-function estaBloqueada(respuesta: RespuestaGemini): boolean {
-  if (respuesta.promptFeedback?.blockReason) return true;
-  return respuesta.candidates?.[0]?.finishReason === "SAFETY" && !extraerTexto(respuesta);
+function estaBloqueada(respuesta: RespuestaOpenAI): boolean {
+  return respuesta.choices?.[0]?.finish_reason === "content_filter" && !extraerTexto(respuesta);
 }
 
 // ─── Endpoint ────────────────────────────────────────────────────────
@@ -557,10 +552,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return error(validacion.error, "VALIDACION", 400);
   }
 
-  const apiKey = variableEntorno("GEMINI_API_KEY");
+  const apiKey = variableEntorno("OPENAI_API_KEY");
   if (!apiKey) {
     // Nunca se registra ni se devuelve la clave; solo su ausencia.
-    console.error("[asesor] GEMINI_API_KEY no configurada.");
+    console.error("[asesor] OPENAI_API_KEY no configurada.");
     return error(
       "El Asesor IA todavía no está configurado. Mientras tanto, escríbenos por WhatsApp.",
       "NO_CONFIGURADO",
@@ -568,39 +563,44 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     );
   }
 
-  const modelo = variableEntorno("GEMINI_MODEL") || MODELO_POR_DEFECTO;
+  const modelo = variableEntorno("OPENAI_MODEL") || MODELO_POR_DEFECTO;
 
   // El catálogo se resuelve con caché y nunca lanza: si la API falla, el chat
   // sigue funcionando con el último valor bueno o con un prompt sin catálogo.
   const catalogo = await obtenerCatalogo();
 
+  // El prompt del sistema viaja como primer mensaje: ahí es donde OpenAI espera
+  // las instrucciones y el catálogo, que es lo que el modelo debe leer siempre.
   const cuerpo = {
-    systemInstruction: { parts: [{ text: construirPrompt(catalogo) }] },
-    contents: validacion.mensajes.map((mensaje) => ({
-      role: mensaje.rol === "usuario" ? "user" : "model",
-      parts: [{ text: mensaje.texto }],
-    })),
-    generationConfig: {
-      temperature: 0.6,
-      topP: 0.9,
-      maxOutputTokens: 512,
-    },
+    model: modelo,
+    messages: [
+      { role: "system", content: construirPrompt(catalogo) },
+      ...validacion.mensajes.map((mensaje) => ({
+        role: mensaje.rol === "usuario" ? "user" : "assistant",
+        content: mensaje.texto,
+      })),
+    ],
+    temperature: 0.6,
+    top_p: 0.9,
+    // Ojo: en la familia GPT-5 el parámetro se llama max_completion_tokens.
+    // Con `max_tokens` la API responde 400 y el chat se queda sin respuesta.
+    max_completion_tokens: 512,
   };
 
   let respuesta: Response;
   try {
-    respuesta = await fetch(`${API_GEMINI}/${encodeURIComponent(modelo)}:generateContent`, {
+    respuesta = await fetch(API_OPENAI, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(cuerpo),
-      signal: AbortSignal.timeout(TIMEOUT_GEMINI_MS),
+      signal: AbortSignal.timeout(TIMEOUT_OPENAI_MS),
     });
   } catch (fallo) {
     const esTimeout = fallo instanceof Error && fallo.name === "TimeoutError";
-    console.error(`[asesor] Error de red al llamar a Gemini: ${fallo instanceof Error ? fallo.name : "desconocido"}`);
+    console.error(`[asesor] Error de red al llamar a OpenAI: ${fallo instanceof Error ? fallo.name : "desconocido"}`);
     return esTimeout
       ? error("El asesor tardó demasiado en responder. Intenta de nuevo.", "TIMEOUT", 504)
       : error(
@@ -610,12 +610,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         );
   }
 
-  const datos = (await respuesta.json().catch(() => ({}))) as RespuestaGemini;
+  const datos = (await respuesta.json().catch(() => ({}))) as RespuestaOpenAI;
 
   if (!respuesta.ok) {
-    const estadoProveedor = datos.error?.status ?? String(respuesta.status);
+    const estadoProveedor = datos.error?.type ?? String(respuesta.status);
     // Log técnico sin el contenido del usuario ni la clave.
-    console.error(`[asesor] Gemini respondió ${respuesta.status} (${estadoProveedor})`);
+    console.error(`[asesor] OpenAI respondió ${respuesta.status} (${estadoProveedor})`);
 
     if (respuesta.status === 429) {
       return error(
@@ -624,20 +624,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         429,
       );
     }
-    if (respuesta.status === 400) {
-      const razones = datos.error?.details?.map((detalle) => detalle.reason ?? "") ?? [];
-      const claveInvalida =
-        razones.includes("API_KEY_INVALID") ||
-        /api[_ ]?key/i.test(datos.error?.message ?? "");
-
-      if (claveInvalida) {
-        console.error("[asesor] La GEMINI_API_KEY fue rechazada por Google.");
-        return error("El Asesor IA no está disponible en este momento.", "NO_DISPONIBLE", 503);
-      }
-      return error("No pudimos procesar tu mensaje. Intenta reformularlo.", "SOLICITUD_INVALIDA", 400);
-    }
+    // Con OpenAI la clave rechazada llega como 401, no como 400: el 400 se
+    // reserva para parámetros mal formados. Al revés que con Google, aquí no
+    // hay que rebuscar en `details` para distinguir una cosa de la otra.
     if (respuesta.status === 401 || respuesta.status === 403) {
+      console.error("[asesor] La OPENAI_API_KEY fue rechazada por OpenAI.");
       return error("El Asesor IA no está disponible en este momento.", "NO_DISPONIBLE", 503);
+    }
+    if (respuesta.status === 400) {
+      return error("No pudimos procesar tu mensaje. Intenta reformularlo.", "SOLICITUD_INVALIDA", 400);
     }
     if (respuesta.status === 404) {
       console.error(`[asesor] Modelo no encontrado: ${modelo}`);
@@ -645,7 +640,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
     return error(
       "El asesor no pudo responder. Intenta de nuevo o escríbenos por WhatsApp.",
-      "ERROR_GEMINI",
+      "ERROR_OPENAI",
       502,
     );
   }
@@ -662,7 +657,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const texto = extraerTexto(datos);
   if (!texto) {
-    console.error("[asesor] Gemini respondió sin texto utilizable.");
+    console.error("[asesor] OpenAI respondió sin texto utilizable.");
     return error(
       "El asesor no pudo responder. Intenta de nuevo o escríbenos por WhatsApp.",
       "RESPUESTA_VACIA",

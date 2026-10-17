@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * Widget del "Asesor IA" de JK Mobiliario.
  *
  * - Se hidrata con `client:idle` (ver Layout.astro) para no afectar los CWV.
- * - Envía el historial a `/api/asesor` (proxy server-side de Gemini), por lo
+ * - Envía el historial a `/api/asesor` (proxy server-side de OpenAI), por lo
  *   que la API key nunca llega al navegador.
  * - Accesible: diálogo modal con trampa de foco, Escape, foco de retorno,
  *   `aria-live` para los mensajes nuevos y respeto por `prefers-reduced-motion`.
@@ -54,7 +54,7 @@ function esMensaje(valor: unknown): valor is Mensaje {
 }
 
 /**
- * Gemini a veces devuelve Markdown (p. ej. **301 517 9340**). El panel muestra
+ * El modelo a veces devuelve Markdown (p. ej. **301 517 9340**). El panel muestra
  * texto plano, así que se limpian los marcadores más comunes en lugar de
  * inyectar HTML crudo en el DOM. Patrones lineales, sin riesgo de retroceso
  * catastrófico.
