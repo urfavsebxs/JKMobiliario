@@ -54,6 +54,20 @@ export function getCartTotal() {
   }, 0);
 }
 
+/**
+ * true cuando algún ítem va a cotización (precio 0 o sin precio).
+ *
+ * El total sigue sumando —los muebles a cotización aportan 0— pero entonces ya
+ * no es el total de la compra, y decirlo es la diferencia entre un número
+ * orientativo y un número que el cliente se cree.
+ */
+export function hayItemsSinPrecio(): boolean {
+  return cartItems.get().some((item) => {
+    const precio = item.variant?.price || item.product.price;
+    return !(typeof precio === "number" && Number.isFinite(precio) && precio > 0);
+  });
+}
+
 export function getCartCount() {
   return cartItems.get().reduce((count, item) => count + item.quantity, 0);
 }

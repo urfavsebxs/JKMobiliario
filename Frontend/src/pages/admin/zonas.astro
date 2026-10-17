@@ -1,0 +1,46 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminZonas from "../../components/react/admin/AdminZonas";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+
+// Dónde se entrega es una decisión del dueño: el asesor la usa para confirmar
+// cobertura a los clientes, así que esta pantalla no se abre a un trabajador.
+// El middleware ya lo deja fuera; se comprueba otra vez, igual que en tráfico.
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+let rol = "";
+try {
+  const res = await fetch(`${API_URL}/api/auth/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return Astro.redirect("/login");
+  rol = (await res.json()).data?.role ?? "";
+} catch {
+  return Astro.redirect("/login");
+}
+
+if (rol !== "admin") {
+  return Astro.redirect(rol === "trabajador" ? "/admin/comprobantes" : "/");
+}
+---
+
+<Layout title="Zonas de entrega" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">← Volver al panel</a>
+      <h1 class="text-2xl font-bold text-gray-900 mt-1">Zonas de entrega</h1>
+      <p class="text-gray-600">
+        Dónde entrega JK Mobiliario: los departamentos, los municipios y los barrios. El asesor
+        de WhatsApp le pregunta la ciudad y el barrio al cliente, y confirma la cobertura con
+        esta lista. Manda siempre la regla más específica.
+      </p>
+    </div>
+
+    <AdminZonas client:load />
+  </div>
+</Layout>

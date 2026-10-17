@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { ROLES } from "../models/User";
 import { CANALES_CLIENTE } from "../models/Cliente";
+import { TIPOS_MENSAJE_ENVIADO } from "../models/MensajeEnviado";
+import { DEPARTAMENTOS_COLOMBIA } from "../models/ZonaEntrega";
 import { PERIODOS } from "../models/Visita";
 import { LARGO_MINIMO_PASSWORD } from "../lib/passwords";
 
@@ -158,7 +160,10 @@ export const createProductSchema = z.object({
   name: z.string().min(1, "Name is required").max(300),
   description: z.string().min(1, "Description is required").max(2000),
   dimensions: z.string().min(1, "Dimensions are required").max(200),
-  price: z.coerce.number().min(0.01, "Price must be positive"),
+  // 0 es un precio válido: significa "a cotización" (muebles a medida cuyo
+  // valor se cierra con un asesor). Lo que no se acepta es un negativo, que
+  // rompería los totales del carrito, ni un vacío.
+  price: z.coerce.number().min(0, "El precio no puede ser negativo"),
   stock: z.coerce.number().int().min(0, "Stock cannot be negative"),
   category: z.string().max(100).optional(),
   sizes: jsonArrayOrRaw(z.string()).optional(),
@@ -494,4 +499,95 @@ export const archivoImagenParamSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{10,20}-[0-9a-f]{6,40}\.(jpg|jpeg|png|webp)$/, "Nombre de imagen no válido"),
+});
+
+// ─── Zonas de entrega ────────────────────────────────────────────────
+/**
+ * GET /api/zonas/consulta — la ubicación que escribió el cliente, en texto
+ * libre ("Medellín", "vivo en Bello, Antioquia").
+ *
+ * Se acota porque entra en el bucle que busca lugares conocidos: sin tope, un
+ * texto larguísimo obligaría a recorrer el diccionario entero contra él.
+ */
+export const coberturaQuerySchema = z.object({
+  ubicacion: z
+    .string()
+    .trim()
+    .min(2, "La ubicación es obligatoria")
+    .max(120, "La ubicación es demasiado larga"),
+});
+
+/**
+ * PATCH /api/zonas/:id — lo único que el panel puede cambiar de una zona.
+ *
+ * El lugar (departamento, municipio, barrio) no está aquí a propósito: es la
+ * clave de la fila y el identificador que usa el asesor al consultar cobertura.
+ * Renombrarlo desde el panel dejaría huérfana la configuración sin que nada
+ * avise; para "mover" un barrio se agrega el nuevo y se borra el viejo.
+ */
+export const updateZonaSchema = z
+  .object({
+    activo: z.boolean().optional(),
+    nota: z.string().trim().max(300, "La nota es demasiado larga").optional(),
+  })
+  .strict()
+  .refine((datos) => Object.keys(datos).length > 0, {
+    message: "Hay que enviar al menos un campo",
+  });
+
+/**
+ * POST /api/zonas — agregar un municipio o un barrio a la cobertura.
+ *
+ * El departamento tiene que ser uno de los 33: es la llave con la que el asesor
+ * cruza la respuesta, y un departamento que no exista dejaría una regla que
+ * nunca se aplica.
+ */
+export const crearZonaSchema = z
+  .object({
+    departamento: z.enum(DEPARTAMENTOS_COLOMBIA),
+    municipio: z.string().trim().max(120, "El municipio es demasiado largo").optional(),
+    barrio: z.string().trim().max(120, "El barrio es demasiado largo").optional(),
+    activo: z.boolean().optional(),
+    nota: z.string().trim().max(300, "La nota es demasiado larga").optional(),
+  })
+  .strict()
+  .refine((datos) => Boolean(datos.municipio?.trim() || datos.barrio?.trim()), {
+    message: "Indica al menos un municipio o un barrio",
+  })
+  .refine((datos) => !datos.barrio?.trim() || Boolean(datos.municipio?.trim()), {
+    message: "Para agregar un barrio hay que indicar el municipio",
+  });
+
+// ─── Mensajes enviados (respuestas citadas) ──────────────────────────
+
+/**
+ * Forma de un `wamid` de Meta: `wamid.` seguido de base64. Se valida la forma
+ * —y no solo que sea cadena— porque el valor entra en una consulta contra Mongo
+ * y porque un objeto (`?mensajeId[$ne]=x` llega como objeto) tiene que rebotar
+ * aquí. El alfabeto incluye `+`, `/` y `=` porque el tramo final es base64.
+ */
+const wamidSchema = z
+  .string()
+  .trim()
+  .min(8, "El id del mensaje es obligatorio")
+  .max(300, "El id del mensaje es demasiado largo")
+  .regex(/^[A-Za-z0-9._:/+=-]+$/, "El id del mensaje tiene caracteres no válidos");
+
+/** POST /api/mensajes/enviado — lo que n8n acaba de mandar. */
+export const registrarMensajeSchema = z
+  .object({
+    mensajeId: wamidSchema,
+    canal: z.enum(CANALES_CLIENTE),
+    identificador: z.string().trim().min(1).max(64),
+    tipo: z.enum(TIPOS_MENSAJE_ENVIADO),
+    producto: z.string().trim().max(200).optional(),
+    texto: z.string().trim().max(1000).optional(),
+  })
+  .strict();
+
+/** GET /api/mensajes/enviado — a qué mensaje respondió el cliente. */
+export const citadoQuerySchema = z.object({
+  mensajeId: wamidSchema,
+  canal: z.enum(CANALES_CLIENTE),
+  identificador: z.string().trim().min(1).max(64),
 });

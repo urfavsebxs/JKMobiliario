@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { useStore } from "@nanostores/react";
-import { cartItems, getCartCount, getCartTotal, removeFromCart, updateQuantity } from "../../lib/cart";
+import { cartItems, getCartCount, getCartTotal, hayItemsSinPrecio, removeFromCart, updateQuantity } from "../../lib/cart";
 import { proxyImageUrl } from "../../lib/images";
-import { formatPrice } from "../../lib/precio";
+import { formatPrice, precioTexto } from "../../lib/precio";
 
 export default function CartButton() {
   const [isOpen, setIsOpen] = useState(false);
   const items = useStore(cartItems);
   const [count, setCount] = useState(0);
   const [total, setTotal] = useState(0);
+  const [hayCotizacion, setHayCotizacion] = useState(false);
 
   useEffect(() => {
     setCount(getCartCount());
     setTotal(getCartTotal());
+    setHayCotizacion(hayItemsSinPrecio());
   }, [items]);
 
   return (
@@ -121,7 +123,7 @@ export default function CartButton() {
                             </p>
                           )}
                           <p className="text-sm font-medium text-gray-900 mt-1">
-                            {formatPrice(item.variant?.price || item.product.price)}
+                            {precioTexto(item.variant?.price || item.product.price)}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <button
@@ -163,6 +165,11 @@ export default function CartButton() {
                     <span>Total</span>
                     <span>{formatPrice(total)}</span>
                   </div>
+                  {hayCotizacion && (
+                    <p className="text-xs text-gray-500">
+                      No incluye los muebles a cotización: esos los valora un asesor.
+                    </p>
+                  )}
                   <button className="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition-colors">
                     Finalizar Compra
                   </button>

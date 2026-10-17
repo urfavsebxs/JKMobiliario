@@ -372,11 +372,19 @@ export default function ProductForm({ productId, product }: Props) {
       return;
     }
 
-    // El precio es obligatorio y debe ser mayor que 0.
-    const precioTexto = formData.price.trim();
-    const precio = Number(precioTexto);
-    if (precioTexto === "" || !Number.isFinite(precio) || precio <= 0) {
-      setError("El precio debe ser mayor que 0.");
+    // El precio puede ser 0: significa que el mueble va A COTIZACIÓN (se
+    // fabrica a medida y el valor se cierra con un asesor), y así se muestra en
+    // la tienda. Lo que no vale es el vacío —casi siempre es un olvido, y
+    // guardarlo como 0 publicaría sin querer un mueble a cotización— ni un
+    // negativo, que rompería los totales del carrito.
+    const precioCrudo = formData.price.trim();
+    const precio = Number(precioCrudo);
+    if (precioCrudo === "") {
+      setError("Escribe el precio. Si el mueble va a cotización, pon 0.");
+      return;
+    }
+    if (!Number.isFinite(precio) || precio < 0) {
+      setError("El precio no puede ser negativo. Si el mueble va a cotización, pon 0.");
       return;
     }
 
@@ -749,15 +757,19 @@ export default function ProductForm({ productId, product }: Props) {
               const input = e.currentTarget;
               if (input.validity.valueMissing || input.validity.rangeUnderflow) {
                 e.preventDefault();
-                setError("El precio debe ser mayor que 0.");
+                setError("El precio no puede ser negativo. Si el mueble va a cotización, pon 0.");
               }
             }}
-            min="0.01"
+            min="0"
             step="0.01"
             inputMode="decimal"
             placeholder="Ej: 899990"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Pon <strong>0</strong> si el mueble va a cotización: en la tienda se muestra como
+            «Cotización» en vez de un precio.
+          </p>
         </div>
 
         <div>
@@ -777,7 +789,7 @@ export default function ProductForm({ productId, product }: Props) {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
           />
           <p className="mt-1 text-xs text-gray-500">
-            {descuentoVista > 0 ? (
+            {descuentoVista > 0 && precioVista > 0 ? (
               <>
                 Precio final:{" "}
                 <span className="font-medium text-gray-900">
@@ -785,6 +797,8 @@ export default function ProductForm({ productId, product }: Props) {
                 </span>{" "}
                 <span className="line-through">{formatPrice(precioVista)}</span>
               </>
+            ) : precioVista <= 0 ? (
+              "Sin precio el mueble se publica como «Cotización»."
             ) : (
               "0 % = sin descuento"
             )}

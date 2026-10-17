@@ -81,6 +81,28 @@ const routes: RouteConfig[] = [
   // atienda. Si algún día un trabajador debe anotar, se cambia aquí y ya.
   { method: "PATCH", path: "/api/clientes/:id", access: "admin" },
 
+  // Zonas de entrega (qué departamentos cubre el envío).
+  // `service`: la consulta la hace n8n cuando el asesor pregunta la ciudad. El
+  // nivel por defecto (`authenticated`) la dejaría fuera del alcance de n8n,
+  // que no tiene JWT, y el asesor no podría confirmar cobertura.
+  { method: "GET", path: "/api/zonas/consulta", access: "service" },
+  // `public`: solo devuelve la lista de departamentos donde se entrega, sin
+  // notas ni departamentos desactivados. La lee el asesor del chat de la web,
+  // que corre en Vercel y no tiene la clave de servicio.
+  { method: "GET", path: "/api/zonas/publicas", access: "public" },
+  // `admin`: dejar un departamento, un municipio o un barrio sin entrega es una
+  // decisión del dueño.
+  { method: "GET", path: "/api/zonas", access: "admin" },
+  { method: "POST", path: "/api/zonas", access: "admin" },
+  { method: "PATCH", path: "/api/zonas/:id", access: "admin" },
+  { method: "DELETE", path: "/api/zonas/:id", access: "admin" },
+
+  // Mensajes que el negocio ya envió, para resolver las respuestas citadas.
+  // `service` en las dos: las llama n8n. La de lectura devuelve a qué mensaje
+  // respondió el cliente, así que tampoco puede quedar abierta.
+  { method: "POST", path: "/api/mensajes/enviado", access: "service" },
+  { method: "GET", path: "/api/mensajes/enviado", access: "service" },
+
   // Tráfico de la página.
   // `public`: la manda el navegador de cualquier visitante, que no tiene
   // sesión. El cuerpo lo cierra `visitaSchema` (`.strict()`): solo entran la

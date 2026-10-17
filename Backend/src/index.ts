@@ -13,8 +13,10 @@ import categoryRoutes from "./modules/categories/category.routes";
 import comprobanteRoutes from "./modules/comprobantes/comprobante.routes";
 import clienteRoutes from "./modules/clientes/cliente.routes";
 import conversacionesRoutes from "./modules/conversaciones/conversaciones.routes";
+import mensajeRoutes from "./modules/mensajes/mensaje.routes";
 import traficoRoutes from "./modules/trafico/trafico.routes";
 import userRoutes from "./modules/users/user.routes";
+import zonaRoutes from "./modules/zonas/zona.routes";
 
 const app = express();
 
@@ -90,8 +92,10 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/comprobantes", comprobanteRoutes);
 app.use("/api/clientes", clienteRoutes);
 app.use("/api/conversaciones", conversacionesRoutes);
+app.use("/api/mensajes", mensajeRoutes);
 app.use("/api/trafico", traficoRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/zonas", zonaRoutes);
 
 // ─── Global error handler (must be last) ─────────────────────────────
 app.use(errorHandler);

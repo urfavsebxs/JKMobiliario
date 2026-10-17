@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { proxyImageUrl } from "../../../lib/images";
-import { descuentoAplicable, formatPrice, precioConDescuento } from "../../../lib/precio";
+import { descuentoAplicable, formatPrice, precioConDescuento, precioTexto } from "../../../lib/precio";
 import type { Product } from "../../../lib/types";
 import { adminFetch, ErrorApi, mensajeError } from "./adminApi";
 
@@ -365,7 +365,7 @@ export default function AdminDescuentos({ products, total }: Props) {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {formatPrice(producto.price)}
+                      {precioTexto(producto.price)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm">
                       {actual > 0 ? (
@@ -424,9 +424,9 @@ export default function AdminDescuentos({ products, total }: Props) {
                       <span
                         className={porcentajeVista > 0 ? "font-semibold text-green-700" : "text-gray-900"}
                       >
-                        {formatPrice(precioFinal)}
+                        {precioTexto(precioFinal)}
                       </span>
-                      {porcentajeVista > 0 && (
+                      {porcentajeVista > 0 && producto.price > 0 && (
                         <span className="ml-2 text-xs text-gray-400 line-through">
                           {formatPrice(producto.price)}
                         </span>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AVISO_ATENCION_PERSONALIZADA, LINEA_ASESOR_TEL, LINEA_ASESOR_TEXTO } from "../../lib/asesor";
 
 /**
  * Widget del "Asesor IA" de JK Mobiliario.
@@ -31,8 +32,9 @@ const BIENVENIDA: Mensaje = {
 };
 
 const SUGERENCIAS = [
-  "¿Qué camas tienen y cuánto cuestan?",
-  "¿Qué medidas y colores manejan?",
+  "¿Qué productos tienen?",
+  "¿Hacen envíos a mi ciudad?",
+  "Busco un mueble con medidas específicas",
   "¿Cómo pido una cotización?",
 ] as const;
 
@@ -426,7 +428,11 @@ export default function AsesorIA() {
   );
 
   const puedeEnviar = entrada.trim().length > 0 && !cargando;
-  const mostrarSugerencias = mensajes.length === 1 && !cargando;
+  // La conversación empieza cuando el cliente escribe. Antes de eso el panel
+  // muestra el aviso de atención personalizada y las preguntas sugeridas, que
+  // es justo lo que el dueño pidió ofrecer ANTES de empezar el chat.
+  const conversacionIniciada = mensajes.some((mensaje) => mensaje.rol === "usuario");
+  const mostrarSugerencias = !conversacionIniciada && !cargando;
 
   return (
     <>
@@ -523,6 +529,36 @@ export default function AsesorIA() {
               aria-label="Conversación con el asesor IA"
               className="flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4"
             >
+              {!conversacionIniciada && (
+                <aside className="rounded-xl border border-jk-gold/40 bg-jk-gold/10 px-3.5 py-3">
+                  <h3 className="font-label text-[11px] font-semibold uppercase tracking-wide text-jk-gold">
+                    Atención personalizada
+                  </h3>
+                  <p className="mt-1 font-sans text-[13px] leading-[1.45] text-white/85">
+                    Puede seguir aquí con el asistente virtual. {AVISO_ATENCION_PERSONALIZADA}
+                  </p>
+                  <a
+                    href={`tel:${LINEA_ASESOR_TEL}`}
+                    className="mt-2 inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-jk-gold/50 px-3 font-label text-[13px] font-medium text-jk-gold transition-colors hover:bg-jk-gold/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jk-gold"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2Z" />
+                    </svg>
+                    Llamar al {LINEA_ASESOR_TEXTO}
+                  </a>
+                </aside>
+              )}
+
               <ul className="flex flex-col gap-3">
                 {mensajes.map((mensaje, indice) => (
                   <li
