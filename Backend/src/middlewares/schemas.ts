@@ -4,6 +4,7 @@ import { CANALES_CLIENTE } from "../models/Cliente";
 import { TIPOS_MENSAJE_ENVIADO } from "../models/MensajeEnviado";
 import { DEPARTAMENTOS_COLOMBIA } from "../models/ZonaEntrega";
 import { PERIODOS } from "../models/Visita";
+import { ESTADOS_CITA } from "../models/Cita";
 import { LARGO_MINIMO_PASSWORD } from "../lib/passwords";
 
 // ─── Auth ────────────────────────────────────────────────────────────
@@ -591,3 +592,45 @@ export const citadoQuerySchema = z.object({
   canal: z.enum(CANALES_CLIENTE),
   identificador: z.string().trim().min(1).max(64),
 });
+
+// ─── Citas ───────────────────────────────────────────────────────────
+
+/**
+ * Fecha que manda el asesor virtual en ISO 8601. Se acepta solo una fecha con
+ * hora explícita: el bot la construye con la hora de Colombia, y una fecha sin
+ * zona se interpretaría en UTC y la cita saldría 5 horas corrida.
+ */
+const fechaCitaSchema = z
+  .string()
+  .trim()
+  .min(16, "La fecha va en ISO 8601, por ejemplo 2026-11-05T15:00:00-05:00")
+  .max(40)
+  .refine((valor) => !Number.isNaN(new Date(valor).getTime()), "La fecha no es válida");
+
+/** POST /api/citas — crea o mueve la cita viva del cliente (service). */
+export const createCitaSchema = z
+  .object({
+    canal: z.enum(CANALES_CLIENTE).default("whatsapp"),
+    identificador: z.string().trim().min(5, "El identificador es obligatorio").max(100),
+    nombre: z.string().trim().max(200).optional(),
+    phoneNumberId: z.string().trim().max(40).optional(),
+    motivo: z.string().trim().min(3, "Dinos qué necesita el cliente").max(300),
+    fecha: fechaCitaSchema,
+    notas: z.string().trim().max(1000).optional(),
+  })
+  .strict()
+  .transform((datos) => ({ ...datos, fecha: new Date(datos.fecha) }));
+
+/** PATCH /api/citas/:id — confirmar, mover o cancelar desde el panel. */
+export const updateCitaSchema = z
+  .object({
+    fecha: fechaCitaSchema.optional(),
+    estado: z.enum(ESTADOS_CITA).optional(),
+    notas: z.string().trim().max(1000).optional(),
+  })
+  .strict()
+  .refine((datos) => Object.keys(datos).length > 0, { message: "No hay cambios que aplicar" })
+  .transform((datos) => ({
+    ...datos,
+    fecha: datos.fecha ? new Date(datos.fecha) : undefined,
+  }));

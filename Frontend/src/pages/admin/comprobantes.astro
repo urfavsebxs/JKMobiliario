@@ -44,6 +44,12 @@ if (rol !== "admin" && rol !== "trabajador") {
         Revisa los comprobantes que llegaron por WhatsApp, verifica el pago y apruébalo o recházalo.
         Al guardar, el cliente recibe el aviso por WhatsApp.
       </p>
+      <a
+        href="/admin/citas"
+        class="inline-block mt-3 bg-white border border-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+      >
+        Ver citas
+      </a>
     </div>
 
     <AdminComprobantes client:load />

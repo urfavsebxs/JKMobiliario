@@ -55,6 +55,10 @@ export const config = {
   // Webhook de n8n que avisa al cliente cuando un trabajador revisa su
   // comprobante. Opcional: sin él, la revisión se guarda pero no se notifica.
   n8nWebhookUrl: process.env.JK_N8N_WEBHOOK_URL?.trim() || "",
+  // Webhook de n8n que le avisa al cliente cuando su cita queda confirmada o
+  // cambia de fecha. Opcional, igual que el de comprobantes: sin él la cita se
+  // guarda y solo queda sin aviso (`notificado: false`).
+  n8nWebhookCita: process.env.JK_N8N_WEBHOOK_URL_CITA?.trim() || "",
   // Número de negocio de WhatsApp desde el que sale la plantilla de aviso.
   // Respaldo para los comprobantes guardados antes de que `phoneNumberId` se
   // persistiera (ver `createComprobanteSchema`): sin número, Meta responde

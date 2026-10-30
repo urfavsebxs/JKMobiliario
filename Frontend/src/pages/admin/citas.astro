@@ -1,0 +1,54 @@
+---
+export const prerender = false;
+
+import Layout from "../../layouts/Layout.astro";
+import AdminCitas from "../../components/react/admin/AdminCitas";
+
+const token = Astro.cookies.get("token")?.value;
+if (!token) {
+  return Astro.redirect("/login");
+}
+
+// El middleware ya filtra por rol, pero se vuelve a comprobar aquí: esta
+// pantalla muestra el teléfono y lo que pidió cada cliente.
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4000";
+let rol = "";
+try {
+  const res = await fetch(`${API_URL}/api/auth/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return Astro.redirect("/login");
+  rol = (await res.json()).data?.role ?? "";
+} catch {
+  return Astro.redirect("/login");
+}
+
+if (rol !== "admin" && rol !== "trabajador") {
+  return Astro.redirect("/");
+}
+---
+
+<Layout title="Citas" bodyClass="bg-jk-surface text-jk-ink">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      {
+        rol === "admin" ? (
+          <a href="/admin" class="text-sm text-gray-500 hover:text-gray-700">
+            ← Volver al panel
+          </a>
+        ) : (
+          <a href="/admin/comprobantes" class="text-sm text-gray-500 hover:text-gray-700">
+            ← Comprobantes
+          </a>
+        )
+      }
+      <h1 class="text-2xl font-bold text-gray-900 mt-1">Citas</h1>
+      <p class="text-gray-600">
+        Las citas que agenda el asesor de WhatsApp. Confírmalas, muévelas o cancélalas aquí: al
+        cliente le llega el aviso por WhatsApp.
+      </p>
+    </div>
+
+    <AdminCitas client:load />
+  </div>
+</Layout>

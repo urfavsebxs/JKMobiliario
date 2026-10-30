@@ -182,3 +182,27 @@ export interface AuthResponse {
   user: User;
   token: string;
 }
+
+// ─── Citas ───────────────────────────────────────────────────────────
+
+export type EstadoCita = "pendiente" | "confirmada" | "cancelada";
+
+/**
+ * Cita agendada por el asesor virtual de WhatsApp. La crea el bot a partir de
+ * lo que pide el cliente; una persona la confirma o la mueve desde el panel.
+ */
+export interface Cita {
+  _id: string;
+  canal: CanalCliente;
+  identificador: string;
+  nombre?: string;
+  motivo: string;
+  fecha: string;
+  notas?: string;
+  estado: EstadoCita;
+  /** Si el último aviso al cliente salió por WhatsApp. */
+  notificado: boolean;
+  ultimoAviso?: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -112,6 +112,14 @@ const routes: RouteConfig[] = [
   // con sesión abierta en un equipo compartido.
   { method: "GET", path: "/api/trafico/resumen", access: "admin" },
 
+  // Citas (agenda del panel). `service` en la de creación: la llama el
+  // sub-flujo "JK - Agendar Cita" de n8n, que no tiene JWT. La agenda y los
+  // cambios son del panel: confirmar una cita es una decisión de la empresa.
+  { method: "POST", path: "/api/citas", access: "service" },
+  { method: "GET", path: "/api/citas", access: "trabajador" },
+  { method: "PATCH", path: "/api/citas/:id", access: "trabajador" },
+  { method: "POST", path: "/api/citas/:id/notificar", access: "trabajador" },
+
   // Conversaciones de WhatsApp guardadas en la memoria de n8n.
   // `admin` en las dos: son conversaciones reales de clientes con nombre,
   // teléfono y lo que preguntaron. El nivel por defecto (`authenticated`) dejaría

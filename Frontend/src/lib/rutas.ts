@@ -16,7 +16,7 @@
 export const RUTA_CAMBIO_PASSWORD = "/cambio-password";
 
 /** Rutas del panel abiertas al rol `trabajador`. */
-export const RUTAS_TRABAJADOR = ["/admin/comprobantes"];
+export const RUTAS_TRABAJADOR = ["/admin/comprobantes", "/admin/citas"];
 
 interface UsuarioParaRuta {
   role?: string;
