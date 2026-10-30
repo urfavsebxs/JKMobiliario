@@ -14,6 +14,7 @@ const createAppError = (message: string, statusCode: number): AppError => {
 /** Zona de la empresa. Sin esto, una cita de las 3 p. m. se avisa como 8 p. m. */
 const ZONA = "America/Bogota";
 
+/** Intl cierra la abreviatura con punto ("3:00 p. m."); en la frase sobra. */
 const formatearFecha = (fecha: Date): string =>
   new Intl.DateTimeFormat("es-CO", {
     weekday: "long",
@@ -23,7 +24,9 @@ const formatearFecha = (fecha: Date): string =>
     minute: "2-digit",
     hour12: true,
     timeZone: ZONA,
-  }).format(fecha);
+  })
+    .format(fecha)
+    .replace(/\.$/, "");
 
 /** Una cita viva es la que todavía no pasó mucho ni se canceló. */
 const VIVA_DESDE = () => new Date(Date.now() - 60 * 60 * 1000);
@@ -139,12 +142,15 @@ export const actualizarCita = async (id: string, cambios: CambiosCita): Promise<
 
 type TipoAviso = "confirmada" | "movida" | "cancelada";
 
-const SALUDO_GENERICO = "cliente";
+/**
+ * Nombre con el que saludar. En Instagram no llega ninguno (el webhook solo
+ * trae el IGSID), así que sin nombre se saluda sin inventarlo.
+ */
 const TIENE_LETRAS = /\p{L}/u;
 
 const nombreParaSaludo = (cita: ICita): string => {
   const nombre = cita.nombre?.trim() || "";
-  return TIENE_LETRAS.test(nombre) ? nombre : SALUDO_GENERICO;
+  return TIENE_LETRAS.test(nombre) ? nombre : "";
 };
 
 /**
@@ -154,14 +160,15 @@ const nombreParaSaludo = (cita: ICita): string => {
 const textoAviso = (cita: ICita, tipo: TipoAviso): string => {
   const cuando = formatearFecha(cita.fecha);
   const nombre = nombreParaSaludo(cita);
+  const saludo = nombre ? `Hola ${nombre}` : "Hola";
 
   if (tipo === "cancelada") {
-    return `Hola ${nombre}, tu cita en JK Mobiliario del ${cuando} fue cancelada. Si quieres, escríbenos por aquí y te ayudamos a agendar otra fecha.`;
+    return `${saludo}, tu cita en JK Mobiliario del ${cuando} fue cancelada. Si quieres, escríbenos por aquí y te ayudamos a agendar otra fecha.`;
   }
   if (tipo === "movida") {
-    return `Hola ${nombre}, tu cita en JK Mobiliario cambió de fecha: ahora es el ${cuando}. Te esperamos en Carrera 52 #7 Sur-22, Mall Providencia, Medellín. Si esa fecha no te sirve, escríbenos por aquí y la ajustamos.`;
+    return `${saludo}, tu cita en JK Mobiliario cambió de fecha: ahora es el ${cuando}. Te esperamos en Carrera 52 #7 Sur-22, Mall Providencia, Medellín. Si esa fecha no te sirve, escríbenos por aquí y la ajustamos.`;
   }
-  return `Hola ${nombre}, tu cita en JK Mobiliario quedó programada para el ${cuando}. Te esperamos en Carrera 52 #7 Sur-22, Mall Providencia, Medellín. Si necesitas cambiarla, escríbenos por aquí.`;
+  return `${saludo}, tu cita en JK Mobiliario quedó programada para el ${cuando}. Te esperamos en Carrera 52 #7 Sur-22, Mall Providencia, Medellín. Si necesitas cambiarla, escríbenos por aquí.`;
 };
 
 /**
